@@ -1,0 +1,126 @@
+# ABOUTME: CRD for ShadowMetricRule — runtime validation that closes the semantic gap.
+# ABOUTME: Evaluates whether valid claims are correct for their workload using Prometheus data.
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: shadowmetricrules.platform.kubecon.io
+  labels:
+    platform.kubecon.io/managed: "true"
+spec:
+  group: platform.kubecon.io
+  names:
+    kind: ShadowMetricRule
+    plural: shadowmetricrules
+    singular: shadowmetricrule
+    shortNames:
+      - smr
+    categories:
+      - platform
+  scope: Cluster
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required:
+                - appliesTo
+                - check
+              properties:
+                appliesTo:
+                  type: array
+                  description: Resource kinds this rule evaluates.
+                  items:
+                    type: object
+                    required:
+                      - kind
+                    properties:
+                      kind:
+                        type: string
+                        description: Kubernetes kind to match (e.g. DatabaseInstanceClaim).
+                check:
+                  type: object
+                  required:
+                    - name
+                    - prometheusQuery
+                    - thresholds
+                  properties:
+                    name:
+                      type: string
+                      description: Human-readable name for this check.
+                    description:
+                      type: string
+                      description: Explanation of what this check measures.
+                    prometheusQuery:
+                      type: string
+                      description: >-
+                        PromQL query to evaluate. Supports ${claim.metadata.namespace}
+                        and ${claim.metadata.name} template variables.
+                    thresholds:
+                      type: array
+                      description: Ordered thresholds evaluated top-to-bottom.
+                      items:
+                        type: object
+                        required:
+                          - when
+                          - message
+                        properties:
+                          when:
+                            type: string
+                            description: Comparison expression (e.g. "> 10000").
+                          recommendation:
+                            type: string
+                            description: Suggested value for the relevant field.
+                          message:
+                            type: string
+                            description: Warning message when threshold is exceeded.
+                          severity:
+                            type: string
+                            description: Severity of the warning.
+                            enum:
+                              - info
+                              - warning
+                              - critical
+                            default: warning
+                action:
+                  type: string
+                  description: What to do when a threshold is exceeded.
+                  enum:
+                    - annotate
+                    - event
+                    - metric
+                  default: annotate
+                annotationKey:
+                  type: string
+                  description: Annotation key to set on the claim when action is annotate.
+                  default: platform.kubecon.io/shadow-metric
+            status:
+              type: object
+              properties:
+                lastEvaluated:
+                  type: string
+                  format: date-time
+                  description: Timestamp of last evaluation run.
+                evaluatedClaims:
+                  type: integer
+                  description: Number of claims evaluated in last run.
+                flaggedClaims:
+                  type: integer
+                  description: Number of claims that exceeded a threshold.
+      additionalPrinterColumns:
+        - name: Check
+          type: string
+          jsonPath: .spec.check.name
+        - name: Action
+          type: string
+          jsonPath: .spec.action
+        - name: Flagged
+          type: integer
+          jsonPath: .status.flaggedClaims
+        - name: Last Evaluated
+          type: date
+          jsonPath: .status.lastEvaluated

@@ -1,0 +1,40 @@
+# ABOUTME: Shadow metric rule — validates database size against actual workload traffic.
+# ABOUTME: Flags undersized instances before they become production incidents.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: ShadowMetricRule
+metadata:
+  name: database-sizing-check
+  labels:
+    platform.kubecon.io/managed: "true"
+spec:
+  appliesTo:
+    - kind: DatabaseInstanceClaim
+  check:
+    name: right-sized
+    description: >-
+      Validates that the requested database size can handle the actual
+      request volume. Uses 24-hour average request rate to the owning
+      namespace as a proxy for database load.
+    prometheusQuery: |
+      sum(rate(http_requests_total{namespace="${claim.metadata.namespace}"}[24h]))
+    thresholds:
+      - when: "> 10000"
+        recommendation: medium
+        severity: warning
+        message: >-
+          Traffic exceeds 10k req/day — a 'small' database instance may be
+          undersized. Connection pool exhaustion risk under peak load.
+      - when: "> 100000"
+        recommendation: large
+        severity: critical
+        message: >-
+          Traffic exceeds 100k req/day — a 'medium' instance will likely hit
+          connection limits and I/O bottlenecks. Upgrade to 'large' recommended.
+      - when: "> 500000"
+        recommendation: large
+        severity: critical
+        message: >-
+          Traffic exceeds 500k req/day — even 'large' may need read replicas
+          or horizontal scaling. Engage the platform team for capacity planning.
+  action: annotate
+  annotationKey: platform.kubecon.io/shadow-metric-sizing

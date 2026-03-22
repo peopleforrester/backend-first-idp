@@ -1,0 +1,29 @@
+# ABOUTME: Crossplane Function reference for shadow metric evaluation.
+# ABOUTME: Conceptual function that reads ShadowMetricRules and annotates claims.
+apiVersion: pkg.crossplane.io/v1beta1
+kind: Function
+metadata:
+  name: function-shadow-metrics
+  labels:
+    platform.kubecon.io/managed: "true"
+  annotations:
+    platform.kubecon.io/description: >-
+      Evaluates ShadowMetricRule resources against live Prometheus data
+      and annotates claims with warning signals. This function runs as
+      a step in the Crossplane composition pipeline after resource
+      provisioning, adding observability-driven metadata to claims.
+    platform.kubecon.io/status: conceptual
+spec:
+  # This is a conceptual function reference for the talk.
+  # In production, this would be implemented as a custom Crossplane
+  # function (using function-go-templating or a custom Go function)
+  # that:
+  #   1. Lists all ShadowMetricRule CRs
+  #   2. For each claim being reconciled, evaluates matching rules
+  #   3. Queries Prometheus using the rule's prometheusQuery
+  #   4. Compares results against thresholds
+  #   5. Annotates the claim with warnings
+  #
+  # The evaluation loop runs every reconciliation cycle (default 10m),
+  # providing continuous runtime validation without blocking provisioning.
+  package: xpkg.upbound.io/platform/function-shadow-metrics:v0.1.0

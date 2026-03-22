@@ -1,0 +1,39 @@
+# ABOUTME: Shadow metric rule — validates region placement against user traffic origin.
+# ABOUTME: Flags claims deployed far from where users actually are.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: ShadowMetricRule
+metadata:
+  name: region-latency-check
+  labels:
+    platform.kubecon.io/managed: "true"
+spec:
+  appliesTo:
+    - kind: DatabaseInstanceClaim
+    - kind: CacheInstanceClaim
+  check:
+    name: region-optimal
+    description: >-
+      Evaluates whether the deployed region matches the geographic
+      origin of user traffic. Uses p95 request latency as a proxy —
+      high latency suggests the resource is deployed far from users.
+    prometheusQuery: |
+      histogram_quantile(0.95,
+        sum(rate(http_request_duration_seconds_bucket{
+          namespace="${claim.metadata.namespace}"
+        }[24h])) by (le)
+      )
+    thresholds:
+      - when: "> 0.5"
+        severity: warning
+        message: >-
+          P95 latency exceeds 500ms — the deployed region may not be
+          optimal for this workload's user base. Consider latency-based
+          routing or redeploying to a closer region.
+      - when: "> 1.0"
+        severity: critical
+        message: >-
+          P95 latency exceeds 1 second — strong indicator that the
+          resource region does not match user geography. This directly
+          impacts SLO compliance.
+  action: annotate
+  annotationKey: platform.kubecon.io/shadow-metric-latency

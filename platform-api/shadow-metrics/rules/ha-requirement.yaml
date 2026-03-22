@@ -1,0 +1,43 @@
+# ABOUTME: Shadow metric rule — validates HA configuration against SLO requirements.
+# ABOUTME: Flags non-HA databases backing services with strict SLO targets.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: ShadowMetricRule
+metadata:
+  name: ha-requirement-check
+  labels:
+    platform.kubecon.io/managed: "true"
+spec:
+  appliesTo:
+    - kind: DatabaseInstanceClaim
+  check:
+    name: ha-appropriate
+    description: >-
+      Evaluates whether a non-HA database is backing a service with an
+      SLO that requires high availability. Uses error rate and uptime
+      metrics to determine if the current HA setting is appropriate.
+    prometheusQuery: |
+      1 - (
+        sum(rate(http_requests_total{
+          namespace="${claim.metadata.namespace}",
+          code=~"5.."
+        }[7d]))
+        /
+        sum(rate(http_requests_total{
+          namespace="${claim.metadata.namespace}"
+        }[7d]))
+      )
+    thresholds:
+      - when: "> 0.999"
+        severity: warning
+        message: >-
+          This service achieves 99.9%+ availability but the database
+          does not have HA enabled. A single database failure would
+          likely breach the SLO. Enable highAvailability: true.
+      - when: "> 0.9999"
+        severity: critical
+        message: >-
+          This service targets four-nines availability but the backing
+          database is single-instance. This is a ticking time bomb.
+          Enable HA immediately.
+  action: annotate
+  annotationKey: platform.kubecon.io/shadow-metric-ha

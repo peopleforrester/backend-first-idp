@@ -1,0 +1,47 @@
+# ABOUTME: Shadow metric rule — validates cost efficiency against actual utilization.
+# ABOUTME: Flags over-provisioned resources that waste cloud spend.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: ShadowMetricRule
+metadata:
+  name: cost-efficiency-check
+  labels:
+    platform.kubecon.io/managed: "true"
+spec:
+  appliesTo:
+    - kind: DatabaseInstanceClaim
+    - kind: CacheInstanceClaim
+  check:
+    name: cost-efficient
+    description: >-
+      Compares provisioned capacity against actual utilization. Resources
+      consistently using less than 20% of their capacity are candidates
+      for downsizing. Uses CPU utilization as a proxy for database and
+      cache load.
+    prometheusQuery: |
+      avg_over_time(
+        (
+          sum(rate(container_cpu_usage_seconds_total{
+            namespace="${claim.metadata.namespace}"
+          }[5m]))
+          /
+          sum(kube_pod_container_resource_limits{
+            namespace="${claim.metadata.namespace}",
+            resource="cpu"
+          })
+        )[7d:]
+      )
+    thresholds:
+      - when: "< 0.1"
+        severity: warning
+        message: >-
+          Average CPU utilization below 10% over the past 7 days.
+          This resource may be significantly over-provisioned. Consider
+          downsizing to reduce costs.
+      - when: "< 0.05"
+        severity: info
+        message: >-
+          Average CPU utilization below 5% over the past 7 days.
+          Strong candidate for downsizing to a smaller instance tier.
+          Estimated savings: 40-60% of current cost.
+  action: annotate
+  annotationKey: platform.kubecon.io/shadow-metric-cost
