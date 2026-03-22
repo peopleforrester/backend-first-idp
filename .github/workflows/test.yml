@@ -1,0 +1,67 @@
+# ABOUTME: CI pipeline — runs full test suite on every push and pull request.
+# ABOUTME: Validates YAML, shell scripts, Kyverno policies, XRDs, compositions, and structure.
+name: Test Suite
+
+on:
+  push:
+    branches: [main, staging, v2-rebuild]
+  pull_request:
+    branches: [main, staging]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: pip install yamllint pyyaml
+
+      - name: Install shellcheck
+        run: sudo apt-get install -y shellcheck
+
+      - name: Install Kyverno CLI
+        run: |
+          curl -sSLO "https://github.com/kyverno/kyverno/releases/download/v1.17.1/kyverno-cli_v1.17.1_linux_x86_64.tar.gz"
+          tar -xzf kyverno-cli_v1.17.1_linux_x86_64.tar.gz
+          sudo mv kyverno /usr/local/bin/
+          kyverno version
+
+      - name: Run YAML lint
+        run: make test-yaml
+
+      - name: Run shellcheck
+        run: make test-shell
+
+      - name: Run Kyverno policy tests
+        run: make test-kyverno
+
+      - name: Run XRD validation
+        run: make test-xrd
+
+      - name: Run composition validation
+        run: make test-compositions
+
+      - name: Run golden path tests
+        run: make test-golden-path
+
+      - name: Run observability tests
+        run: make test-observability
+
+      - name: Run ESO tests
+        run: make test-eso
+
+      - name: Run scale tests
+        run: make test-scale
+
+      - name: Run structure tests
+        run: make test-structure
