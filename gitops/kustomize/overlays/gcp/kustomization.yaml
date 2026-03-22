@@ -1,0 +1,8 @@
+# ABOUTME: GCP kustomize overlay — base resources plus GCP-specific composition.
+# ABOUTME: Applied to clusters labeled provider=gcp by the platform ApplicationSet.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+  - ../../../../platform-api/compositions/gcp/database-small.yaml

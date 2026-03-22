@@ -1,0 +1,8 @@
+# ABOUTME: AWS kustomize overlay — base resources plus AWS-specific composition.
+# ABOUTME: Applied to clusters labeled provider=aws by the platform ApplicationSet.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+  - ../../../../platform-api/compositions/aws/database-small.yaml

@@ -1,0 +1,77 @@
+# ABOUTME: ArgoCD ApplicationSets for platform components and team claims.
+# ABOUTME: Cluster generator for infra, git generator for team self-service claims.
+
+# --- Platform Components ApplicationSet ---
+# Deploys XRDs, compositions, and policies per cluster based on provider label.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: platform-components
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - clusters:
+        selector:
+          matchExpressions:
+            - key: provider
+              operator: In
+              values:
+                - aws
+                - gcp
+                - azure
+  template:
+    metadata:
+      name: "platform-{{.name}}"
+    spec:
+      project: platform
+      source:
+        repoURL: https://github.com/peopleforrester/backend-first-idp.git
+        targetRevision: main
+        path: "gitops/kustomize/overlays/{{.metadata.labels.provider}}"
+      destination:
+        server: "{{.server}}"
+        namespace: crossplane-system
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - ServerSideApply=true
+---
+# --- Team Claims ApplicationSet ---
+# Scans for team database claims committed to the repo via GitOps.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: team-claims
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - git:
+        repoURL: https://github.com/peopleforrester/backend-first-idp.git
+        revision: main
+        directories:
+          - path: "teams/*/claims"
+  template:
+    metadata:
+      name: "claims-{{.path.basename}}"
+    spec:
+      project: teams
+      source:
+        repoURL: https://github.com/peopleforrester/backend-first-idp.git
+        targetRevision: main
+        path: "{{.path.path}}"
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "{{.path[1]}}"
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true

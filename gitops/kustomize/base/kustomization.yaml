@@ -1,0 +1,8 @@
+# ABOUTME: Kustomize base — shared platform resources applied to all clusters.
+# ABOUTME: Includes XRDs and Gatekeeper constraint templates.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../../platform-api/xrds/database-instance.yaml
+  - ../../../policies/gatekeeper/constraint-templates/platform-validation.yaml
