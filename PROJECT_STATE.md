@@ -1,32 +1,38 @@
 # Project State
 
 ## Current Status
-All 13 phases complete. Full test suite green. Ready for main merge.
+V1 implementation complete. V2 rebuild plan documented and ready for execution.
 
-## Task Checklist
-- [x] Phase 0: Test tooling & validation framework
-- [x] Phase 1: Platform API — XRD (DatabaseInstance)
-- [x] Phase 2: AWS Composition (RDS + IAM + SecurityGroup)
-- [x] Phase 3: GCP Composition (Cloud SQL + Database + User)
-- [x] Phase 4: Azure Composition (FlexibleServer + Database)
-- [x] Phase 5: OPA policies (region + size + semantic gap)
-- [x] Phase 6: Gatekeeper ConstraintTemplate + Constraint
-- [x] Phase 7: Golden path examples (working + failing claims)
-- [x] Phase 8: ArgoCD ApplicationSets
-- [x] Phase 9: Kustomize overlays (base + 3 clouds)
-- [x] Phase 10: Bootstrap script + provider configs
-- [x] Phase 11: Documentation (README, DEMO.md, architecture, LICENSE)
-- [x] Phase 12: Full integration test — all tests green
+## V1 — Complete
+All 13 phases done. Full test suite green. Merged to main.
+See `docs/v1-summary.md` for detailed summary and gap analysis.
 
-## Test Results
-- 17 YAML files: all pass yamllint
-- 9 shell scripts: all pass shellcheck
-- 21 OPA tests: all pass
-- 30 XRD assertions: all pass
-- 36 composition assertions: all pass
-- 15 golden path assertions: all pass
-- 31 structure checks: all pass
+## V2 — Planned
+17-phase rebuild on `v2-rebuild` branch. See `v2-plan.md` for full spec.
+
+### V2 Phase Checklist
+- [ ] Phase 0: Scaffolding + test tooling reset
+- [ ] Phase 1: Crossplane v2 XRDs (7 resource types)
+- [ ] Phase 2: Compositions (21 files, 3 clouds × 7 types)
+- [ ] Phase 3: Kyverno CEL policies (6 cluster policies)
+- [ ] Phase 4: Teams + 100+ claims + generator script
+- [ ] Phase 5: External Secrets Operator
+- [ ] Phase 6: Observability (OTel + Prometheus + OpenCost + Grafana)
+- [ ] Phase 7: Shadow Metrics (CRD + rules + dashboards)
+- [ ] Phase 8: Policy promotion pipeline
+- [ ] Phase 9: Kustomize overlays (cloud + environment)
+- [ ] Phase 10: Composition drift detection
+- [ ] Phase 11: ArgoCD v3 migration
+- [ ] Phase 12: Golden path examples update
+- [ ] Phase 13: Bootstrap script rewrite
+- [ ] Phase 14: Documentation rewrite
+- [ ] Phase 15: CI pipeline + GitHub repo polish
+- [ ] Phase 16: Full integration test
 
 ## Branch Status
-- `staging`: all work complete, tests green
-- `main`: awaiting merge from staging
+- `main`: v1 complete
+- `staging`: v1 complete (in sync with main)
+- `v2-rebuild`: not yet created
+
+## Next Step
+Create `v2-rebuild` branch and begin Phase 0.
