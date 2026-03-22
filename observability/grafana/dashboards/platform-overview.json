@@ -1,0 +1,84 @@
+{
+  "annotations": { "list": [] },
+  "description": "Platform health overview — Crossplane resources, ArgoCD sync, Kyverno policy stats",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "title": "Crossplane Managed Resources",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "count(crossplane_managed_resource_ready_seconds)",
+          "legendFormat": "Total Resources"
+        }
+      ]
+    },
+    {
+      "title": "Crossplane Provider Health",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "targets": [
+        {
+          "expr": "min(crossplane_provider_healthy)",
+          "legendFormat": "All Providers Healthy"
+        }
+      ]
+    },
+    {
+      "title": "ArgoCD Apps In Sync",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "count(argocd_app_info{sync_status=\"Synced\"})",
+          "legendFormat": "Synced"
+        }
+      ]
+    },
+    {
+      "title": "Kyverno Policy Violations (24h)",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(increase(kyverno_admission_review_duration_seconds_count{resource_request_operation=\"CREATE\",policy_enforcement_action=\"blocked\"}[24h]))",
+          "legendFormat": "Blocked"
+        }
+      ]
+    },
+    {
+      "title": "Resource Reconciliation Rate",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "targets": [
+        {
+          "expr": "sum(rate(crossplane_managed_resource_reconcile_total[5m])) by (kind)",
+          "legendFormat": "{{ kind }}"
+        }
+      ]
+    },
+    {
+      "title": "ArgoCD Sync Status by App",
+      "type": "table",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "targets": [
+        {
+          "expr": "argocd_app_info",
+          "format": "table",
+          "instant": true
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["platform", "overview"],
+  "templating": { "list": [] },
+  "time": { "from": "now-6h", "to": "now" },
+  "title": "Platform Overview",
+  "uid": "platform-overview"
+}

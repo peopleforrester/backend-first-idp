@@ -1,0 +1,53 @@
+# ABOUTME: PrometheusRule for ArgoCD sync drift detection.
+# ABOUTME: Alerts when applications go out of sync or have degraded health.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: drift-detection
+  namespace: observability
+  labels:
+    prometheus: platform
+    role: alert-rules
+spec:
+  groups:
+    - name: argocd.drift
+      interval: 60s
+      rules:
+        - alert: ArgoCDAppOutOfSync
+          expr: |
+            argocd_app_info{sync_status="OutOfSync"} == 1
+          for: 10m
+          labels:
+            severity: warning
+            team: platform
+          annotations:
+            summary: "ArgoCD application {{ $labels.name }} is out of sync"
+            description: >-
+              Application {{ $labels.name }} in project {{ $labels.project }}
+              has been OutOfSync for 10 minutes. This indicates GitOps drift
+              between the desired state in git and the live cluster state.
+
+        - alert: ArgoCDAppDegraded
+          expr: |
+            argocd_app_info{health_status="Degraded"} == 1
+          for: 5m
+          labels:
+            severity: critical
+            team: platform
+          annotations:
+            summary: "ArgoCD application {{ $labels.name }} is degraded"
+            description: >-
+              Application {{ $labels.name }} health is Degraded. One or more
+              resources managed by this application are unhealthy.
+
+        - alert: ArgoCDSyncFailed
+          expr: |
+            increase(argocd_app_sync_total{phase="Failed"}[15m]) > 0
+          for: 1m
+          labels:
+            severity: warning
+            team: platform
+          annotations:
+            summary: "ArgoCD sync failed for {{ $labels.name }}"
+            description: >-
+              Application {{ $labels.name }} had a failed sync in the last 15 minutes.

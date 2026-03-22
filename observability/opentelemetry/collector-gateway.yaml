@@ -1,0 +1,67 @@
+# ABOUTME: OpenTelemetry Collector in Deployment mode — central gateway for aggregation.
+# ABOUTME: Receives from agents, exports to Prometheus (metrics) and OTLP backends (traces).
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: otel-gateway
+  namespace: observability
+spec:
+  mode: deployment
+  replicas: 2
+  config:
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+
+    processors:
+      batch:
+        send_batch_size: 2048
+        timeout: 10s
+      memory_limiter:
+        check_interval: 5s
+        limit_mib: 1024
+        spike_limit_mib: 256
+      resource:
+        attributes:
+          - key: platform.kubecon.io/collector
+            value: gateway
+            action: upsert
+
+    exporters:
+      prometheus:
+        endpoint: 0.0.0.0:8889
+        metric_expiration: 5m
+        resource_to_telemetry_conversion:
+          enabled: true
+      otlp:
+        endpoint: tempo.observability.svc.cluster.local:4317
+        tls:
+          insecure: true
+      debug:
+        verbosity: basic
+
+    service:
+      pipelines:
+        traces:
+          receivers:
+            - otlp
+          processors:
+            - memory_limiter
+            - resource
+            - batch
+          exporters:
+            - otlp
+            - debug
+        metrics:
+          receivers:
+            - otlp
+          processors:
+            - memory_limiter
+            - resource
+            - batch
+          exporters:
+            - prometheus

@@ -1,0 +1,71 @@
+{
+  "annotations": { "list": [] },
+  "description": "Claim provisioning latency by resource type, cloud provider, and team",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "title": "Average Provisioning Time by Resource Type",
+      "type": "barchart",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "avg(platform:claim_provisioning_duration_seconds) by (kind)",
+          "legendFormat": "{{ kind }}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "s" }
+      }
+    },
+    {
+      "title": "P95 Provisioning Time by Team",
+      "type": "barchart",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "quantile(0.95, platform:claim_provisioning_duration_seconds) by (namespace)",
+          "legendFormat": "{{ namespace }}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "s" }
+      }
+    },
+    {
+      "title": "Provisioning Time Over Time",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "expr": "avg(platform:claim_provisioning_duration_seconds) by (kind)",
+          "legendFormat": "{{ kind }}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "s" }
+      }
+    },
+    {
+      "title": "Claims Currently Provisioning",
+      "type": "table",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 },
+      "targets": [
+        {
+          "expr": "platform:claim_provisioning_duration_seconds > 0 unless platform:claim_provisioning_duration_seconds == 0",
+          "format": "table",
+          "instant": true
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["platform", "claims", "latency"],
+  "templating": { "list": [] },
+  "time": { "from": "now-24h", "to": "now" },
+  "title": "Claim Lifecycle",
+  "uid": "claim-lifecycle"
+}

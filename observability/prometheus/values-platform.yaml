@@ -1,0 +1,49 @@
+# ABOUTME: Helm values for kube-prometheus-stack tailored to the platform.
+# ABOUTME: Enables Grafana with dashboard auto-provisioning and platform-specific retention.
+prometheus:
+  prometheusSpec:
+    retention: 30d
+    retentionSize: 50GB
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 100Gi
+    serviceMonitorSelector:
+      matchLabels:
+        prometheus: platform
+    ruleSelector:
+      matchLabels:
+        prometheus: platform
+
+grafana:
+  enabled: true
+  adminPassword: CHANGEME
+  sidecar:
+    dashboards:
+      enabled: true
+      searchNamespace: observability
+      label: grafana_dashboard
+      folderAnnotation: grafana_folder
+    datasources:
+      enabled: true
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: platform
+          orgId: 1
+          folder: Platform
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/platform
+
+alertmanager:
+  enabled: true
+  alertmanagerSpec:
+    retention: 120h

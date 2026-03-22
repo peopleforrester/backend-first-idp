@@ -1,0 +1,20 @@
+# ABOUTME: ServiceMonitor for Crossplane controller metrics.
+# ABOUTME: Scrapes the Crossplane pod metrics endpoint for reconciliation and provider health.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: crossplane
+  namespace: observability
+  labels:
+    prometheus: platform
+spec:
+  namespaceSelector:
+    matchNames:
+      - crossplane-system
+  selector:
+    matchLabels:
+      app: crossplane
+  endpoints:
+    - port: metrics
+      interval: 30s
+      path: /metrics

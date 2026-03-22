@@ -1,0 +1,52 @@
+# ABOUTME: PrometheusRule for Crossplane health monitoring.
+# ABOUTME: Alerts on provider failures, reconciliation errors, and stale resources.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: crossplane-alerts
+  namespace: observability
+  labels:
+    prometheus: platform
+    role: alert-rules
+spec:
+  groups:
+    - name: crossplane.health
+      interval: 60s
+      rules:
+        - alert: CrossplaneProviderUnhealthy
+          expr: |
+            crossplane_provider_healthy == 0
+          for: 5m
+          labels:
+            severity: critical
+            team: platform
+          annotations:
+            summary: "Crossplane provider {{ $labels.provider }} is unhealthy"
+            description: >-
+              Provider {{ $labels.provider }} has been unhealthy for more than 5 minutes.
+              This blocks all resource provisioning for this cloud.
+
+        - alert: CrossplaneReconcileErrors
+          expr: |
+            rate(crossplane_managed_resource_reconcile_errors_total[5m]) > 0.1
+          for: 10m
+          labels:
+            severity: warning
+            team: platform
+          annotations:
+            summary: "High Crossplane reconciliation error rate"
+            description: >-
+              Managed resource reconciliation errors exceeding 0.1/s for 10 minutes.
+              Resource: {{ $labels.kind }} in {{ $labels.namespace }}.
+
+        - alert: CrossplaneManagedResourceStale
+          expr: |
+            time() - crossplane_managed_resource_last_reconcile_seconds > 3600
+          for: 15m
+          labels:
+            severity: warning
+            team: platform
+          annotations:
+            summary: "Crossplane managed resource has not reconciled in 1 hour"
+            description: >-
+              {{ $labels.kind }}/{{ $labels.name }} last reconciled {{ $value | humanizeDuration }} ago.

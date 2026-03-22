@@ -1,0 +1,87 @@
+{
+  "annotations": { "list": [] },
+  "description": "Shadow Metrics — claims that passed policy but may be wrong for their workload",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "title": "Claims with Shadow Metric Warnings",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 8, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "count(platform:shadow_metric_score > 0)",
+          "legendFormat": "Flagged Claims"
+        }
+      ]
+    },
+    {
+      "title": "Undersized Databases (traffic vs capacity)",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 8, "x": 8, "y": 0 },
+      "targets": [
+        {
+          "expr": "count(platform:shadow_metric_sizing_score > 0.5)",
+          "legendFormat": "Undersized"
+        }
+      ]
+    },
+    {
+      "title": "Suboptimal Region Placement",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 8, "x": 16, "y": 0 },
+      "targets": [
+        {
+          "expr": "count(platform:shadow_metric_latency_score > 0.5)",
+          "legendFormat": "Suboptimal Region"
+        }
+      ]
+    },
+    {
+      "title": "Shadow Metric: Right-Sizing Score by Claim",
+      "description": "Higher score = more likely undersized for actual traffic. 0 = fine, 1 = critical mismatch.",
+      "type": "table",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 4 },
+      "targets": [
+        {
+          "expr": "sort_desc(platform:shadow_metric_sizing_score > 0)",
+          "format": "table",
+          "instant": true
+        }
+      ]
+    },
+    {
+      "title": "Shadow Metric: Region Latency Score Over Time",
+      "description": "Tracks whether deployed region matches user traffic origin. Rising score = growing mismatch.",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 14 },
+      "targets": [
+        {
+          "expr": "platform:shadow_metric_latency_score",
+          "legendFormat": "{{ namespace }}/{{ name }}"
+        }
+      ]
+    },
+    {
+      "title": "Shadow Metric: Cost Efficiency Score",
+      "description": "Identifies claims paying for more capacity than workload needs. Low score = overpaying.",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 22 },
+      "targets": [
+        {
+          "expr": "platform:shadow_metric_cost_efficiency_score",
+          "legendFormat": "{{ namespace }}/{{ name }}"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["platform", "shadow-metrics", "semantic-gap"],
+  "templating": { "list": [] },
+  "time": { "from": "now-7d", "to": "now" },
+  "title": "Shadow Metrics",
+  "uid": "shadow-metrics"
+}

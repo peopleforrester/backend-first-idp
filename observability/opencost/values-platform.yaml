@@ -1,0 +1,18 @@
+# ABOUTME: Helm values for OpenCost — CNCF Incubating cost monitoring.
+# ABOUTME: Configures Prometheus integration and team-based cost allocation.
+opencost:
+  prometheus:
+    internal:
+      enabled: false
+    external:
+      enabled: true
+      url: http://prometheus-kube-prometheus-prometheus.observability.svc.cluster.local:9090
+  ui:
+    enabled: true
+  metrics:
+    serviceMonitor:
+      enabled: true
+      additionalLabels:
+        prometheus: platform
+  customPricing:
+    enabled: false

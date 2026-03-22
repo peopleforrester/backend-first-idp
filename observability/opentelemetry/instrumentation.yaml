@@ -1,0 +1,28 @@
+# ABOUTME: OpenTelemetry auto-instrumentation CR for platform workloads.
+# ABOUTME: Injects OTel SDK into annotated pods for automatic trace/metric collection.
+apiVersion: opentelemetry.io/v1alpha1
+kind: Instrumentation
+metadata:
+  name: platform-instrumentation
+  namespace: observability
+spec:
+  exporter:
+    endpoint: http://otel-agent-collector.observability.svc.cluster.local:4317
+  propagators:
+    - tracecontext
+    - baggage
+  sampler:
+    type: parentbased_traceidratio
+    argument: "0.25"
+  python:
+    env:
+      - name: OTEL_PYTHON_LOG_CORRELATION
+        value: "true"
+  java:
+    env:
+      - name: OTEL_INSTRUMENTATION_JDBC_ENABLED
+        value: "true"
+  nodejs:
+    env:
+      - name: OTEL_NODE_RESOURCE_DETECTORS
+        value: env,host,os

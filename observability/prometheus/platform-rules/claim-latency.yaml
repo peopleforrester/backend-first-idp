@@ -1,0 +1,51 @@
+# ABOUTME: PrometheusRule for claim provisioning latency monitoring.
+# ABOUTME: Alerts when database/cache claims take too long to reach Available state.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: claim-latency
+  namespace: observability
+  labels:
+    prometheus: platform
+    role: alert-rules
+spec:
+  groups:
+    - name: claim.latency
+      interval: 60s
+      rules:
+        # Recording rule: time from claim creation to Available
+        - record: platform:claim_provisioning_duration_seconds
+          expr: |
+            (
+              crossplane_managed_resource_ready_seconds
+              - on(name, namespace) group_left()
+              crossplane_managed_resource_first_seen_seconds
+            )
+
+        - alert: ClaimProvisioningSlow
+          expr: |
+            platform:claim_provisioning_duration_seconds > 300
+          for: 5m
+          labels:
+            severity: warning
+            team: platform
+          annotations:
+            summary: "Claim provisioning exceeds 5 minutes"
+            description: >-
+              {{ $labels.kind }}/{{ $labels.name }} in {{ $labels.namespace }}
+              has been provisioning for {{ $value | humanizeDuration }}.
+              Expected: under 5 minutes for most resource types.
+
+        - alert: ClaimProvisioningStuck
+          expr: |
+            platform:claim_provisioning_duration_seconds > 900
+          for: 5m
+          labels:
+            severity: critical
+            team: platform
+          annotations:
+            summary: "Claim provisioning stuck — exceeds 15 minutes"
+            description: >-
+              {{ $labels.kind }}/{{ $labels.name }} in {{ $labels.namespace }}
+              has been provisioning for {{ $value | humanizeDuration }}.
+              Investigate the Crossplane provider and cloud API status.

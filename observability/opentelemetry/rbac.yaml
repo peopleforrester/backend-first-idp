@@ -1,0 +1,57 @@
+# ABOUTME: RBAC for OpenTelemetry collectors — ServiceAccount, ClusterRole, ClusterRoleBinding.
+# ABOUTME: Grants read access to pods/nodes/namespaces for k8sattributes processor.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: otel-collector
+  namespace: observability
+  labels:
+    app.kubernetes.io/component: collector
+    platform.kubecon.io/managed: "true"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: otel-collector
+  labels:
+    platform.kubecon.io/managed: "true"
+rules:
+  - apiGroups: [""]
+    resources:
+      - pods
+      - nodes
+      - namespaces
+      - endpoints
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups: ["apps"]
+    resources:
+      - deployments
+      - replicasets
+      - daemonsets
+      - statefulsets
+    verbs:
+      - get
+      - list
+      - watch
+  - nonResourceURLs:
+      - /metrics
+    verbs:
+      - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: otel-collector
+  labels:
+    platform.kubecon.io/managed: "true"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: otel-collector
+subjects:
+  - kind: ServiceAccount
+    name: otel-collector
+    namespace: observability

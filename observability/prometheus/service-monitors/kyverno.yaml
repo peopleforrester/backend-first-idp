@@ -1,0 +1,21 @@
+# ABOUTME: ServiceMonitor for Kyverno admission controller metrics.
+# ABOUTME: Scrapes policy evaluation counts, latency, and violation metrics.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: kyverno
+  namespace: observability
+  labels:
+    prometheus: platform
+spec:
+  namespaceSelector:
+    matchNames:
+      - kyverno
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: admission-controller
+      app.kubernetes.io/instance: kyverno
+  endpoints:
+    - port: metrics-port
+      interval: 30s
+      path: /metrics

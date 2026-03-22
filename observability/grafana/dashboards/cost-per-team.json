@@ -1,0 +1,74 @@
+{
+  "annotations": { "list": [] },
+  "description": "OpenCost team cost breakdown — cloud spend allocated by team label",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "title": "Total Monthly Cost by Team",
+      "type": "barchart",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(opencost_cluster_cost_hourly * 730) by (namespace)",
+          "legendFormat": "{{ namespace }}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "currencyUSD" }
+      }
+    },
+    {
+      "title": "Cost by Resource Type",
+      "type": "piechart",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(opencost_cluster_cost_hourly * 730) by (resource_type)",
+          "legendFormat": "{{ resource_type }}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "currencyUSD" }
+      }
+    },
+    {
+      "title": "Cost Trend by Team (30d)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "expr": "sum(opencost_cluster_cost_hourly) by (namespace)",
+          "legendFormat": "{{ namespace }}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "currencyUSD" }
+      }
+    },
+    {
+      "title": "Cost Efficiency: Cost per Claim",
+      "type": "table",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 },
+      "targets": [
+        {
+          "expr": "sum(opencost_cluster_cost_hourly * 730) by (namespace) / count(crossplane_managed_resource_ready_seconds) by (namespace)",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "currencyUSD" }
+      }
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["platform", "cost", "opencost", "finops"],
+  "templating": { "list": [] },
+  "time": { "from": "now-30d", "to": "now" },
+  "title": "Cost per Team",
+  "uid": "cost-per-team"
+}

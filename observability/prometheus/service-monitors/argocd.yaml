@@ -1,0 +1,20 @@
+# ABOUTME: ServiceMonitor for ArgoCD application controller and server metrics.
+# ABOUTME: Scrapes sync status, health, and reconciliation metrics.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: argocd
+  namespace: observability
+  labels:
+    prometheus: platform
+spec:
+  namespaceSelector:
+    matchNames:
+      - argocd
+  selector:
+    matchLabels:
+      app.kubernetes.io/part-of: argocd
+  endpoints:
+    - port: metrics
+      interval: 30s
+      path: /metrics

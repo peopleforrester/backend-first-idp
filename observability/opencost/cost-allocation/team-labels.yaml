@@ -1,0 +1,33 @@
+# ABOUTME: OpenCost label-based cost allocation configuration.
+# ABOUTME: Maps the 'team' label to cost allocation groups for per-team billing.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opencost-cost-allocation
+  namespace: observability
+  labels:
+    app: opencost
+    platform.kubecon.io/managed: "true"
+data:
+  allocation.yaml: |
+    # Cost allocation by team label
+    # OpenCost uses namespace and label-based allocation to attribute
+    # cloud spend to owning teams.
+    labelConfig:
+      enabled: true
+      teamLabel: team
+      departmentLabel: ""
+      environmentLabel: ""
+    namespaceMapping:
+      checkout: checkout
+      payments: payments
+      analytics: analytics
+      platform: platform
+      identity: identity
+      catalog: catalog
+      shipping: shipping
+      notifications: notifications
+      inventory: inventory
+      search: search
+      billing: billing
+      marketing: marketing
