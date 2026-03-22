@@ -1,0 +1,151 @@
+# ABOUTME: AWS Composition for DatabaseInstance — maps platform API to RDS + IAM + networking.
+# ABOUTME: Uses Pipeline mode with function-patch-and-transform.
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: database-small-aws
+  labels:
+    provider: aws
+    crossplane.io/xrd: xdatabaseinstances.platform.kubecon.io
+spec:
+  compositeTypeRef:
+    apiVersion: platform.kubecon.io/v1alpha1
+    kind: DatabaseInstance
+  mode: Pipeline
+  pipeline:
+    - step: patch-and-transform
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+          # --- RDS Instance ---
+          - name: rds-instance
+            base:
+              apiVersion: rds.aws.upbound.io/v1beta2
+              kind: Instance
+              spec:
+                forProvider:
+                  instanceClass: db.t4g.medium
+                  allocatedStorage: 20
+                  storageType: gp3
+                  storageEncrypted: true
+                  performanceInsightsEnabled: true
+                  performanceInsightsRetentionPeriod: 7
+                  publiclyAccessible: false
+                  skipFinalSnapshot: true
+                  autoMinorVersionUpgrade: true
+                  copyTagsToSnapshot: true
+                providerConfigRef:
+                  name: aws-provider
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.engine
+                toFieldPath: spec.forProvider.engine
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.region
+                toFieldPath: spec.forProvider.region
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.highAvailability
+                toFieldPath: spec.forProvider.multiAz
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.backupRetentionDays
+                toFieldPath: spec.forProvider.backupRetentionPeriod
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.team
+                toFieldPath: spec.forProvider.tags["team"]
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.size
+                toFieldPath: spec.forProvider.instanceClass
+                transforms:
+                  - type: map
+                    map:
+                      small: db.t4g.medium
+                      medium: db.t4g.large
+                      large: db.r6g.xlarge
+              - type: ToCompositeFieldPath
+                fromFieldPath: status.atProvider.endpoint
+                toFieldPath: status.endpoint
+              - type: ToCompositeFieldPath
+                fromFieldPath: status.atProvider.port
+                toFieldPath: status.port
+
+          # --- IAM Role for RDS enhanced monitoring ---
+          - name: iam-role
+            base:
+              apiVersion: iam.aws.upbound.io/v1beta1
+              kind: Role
+              spec:
+                forProvider:
+                  assumeRolePolicy: |
+                    {
+                      "Version": "2012-10-17",
+                      "Statement": [
+                        {
+                          "Effect": "Allow",
+                          "Principal": {
+                            "Service": "monitoring.rds.amazonaws.com"
+                          },
+                          "Action": "sts:AssumeRole"
+                        }
+                      ]
+                    }
+                providerConfigRef:
+                  name: aws-provider
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.team
+                toFieldPath: spec.forProvider.tags["team"]
+
+          # --- VPC Security Group ---
+          - name: security-group
+            base:
+              apiVersion: ec2.aws.upbound.io/v1beta1
+              kind: SecurityGroup
+              spec:
+                forProvider:
+                  description: Database security group managed by Crossplane
+                providerConfigRef:
+                  name: aws-provider
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.region
+                toFieldPath: spec.forProvider.region
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.team
+                toFieldPath: spec.forProvider.tags["team"]
+
+          # --- Security Group Rule (ingress on db port) ---
+          - name: security-group-rule
+            base:
+              apiVersion: ec2.aws.upbound.io/v1beta1
+              kind: SecurityGroupRule
+              spec:
+                forProvider:
+                  type: ingress
+                  fromPort: 5432
+                  toPort: 5432
+                  protocol: tcp
+                  cidrBlocks:
+                    - "10.0.0.0/8"
+                  description: Allow database access from internal network
+                providerConfigRef:
+                  name: aws-provider
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.engine
+                toFieldPath: spec.forProvider.fromPort
+                transforms:
+                  - type: map
+                    map:
+                      postgres: 5432
+                      mysql: 3306
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.engine
+                toFieldPath: spec.forProvider.toPort
+                transforms:
+                  - type: map
+                    map:
+                      postgres: 5432
+                      mysql: 3306

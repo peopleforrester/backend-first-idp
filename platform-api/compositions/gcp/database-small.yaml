@@ -1,0 +1,138 @@
+# ABOUTME: GCP Composition for DatabaseInstance — maps platform API to Cloud SQL + Database + User.
+# ABOUTME: Uses Pipeline mode with function-patch-and-transform and region mapping.
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: database-small-gcp
+  labels:
+    provider: gcp
+    crossplane.io/xrd: xdatabaseinstances.platform.kubecon.io
+spec:
+  compositeTypeRef:
+    apiVersion: platform.kubecon.io/v1alpha1
+    kind: DatabaseInstance
+  mode: Pipeline
+  pipeline:
+    - step: patch-and-transform
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+          # --- Cloud SQL DatabaseInstance ---
+          - name: cloudsql-instance
+            base:
+              apiVersion: sql.gcp.upbound.io/v1beta2
+              kind: DatabaseInstance
+              spec:
+                forProvider:
+                  databaseVersion: POSTGRES_15
+                  deletionProtection: false
+                  settings:
+                    - tier: db-custom-2-4096
+                      diskType: PD_SSD
+                      diskSize: 20
+                      diskAutoresize: true
+                      availabilityType: ZONAL
+                      backupConfiguration:
+                        - enabled: true
+                          startTime: "03:00"
+                          pointInTimeRecoveryEnabled: false
+                      insightsConfig:
+                        - queryInsightsEnabled: true
+                          queryStringLength: 1024
+                          recordApplicationTags: true
+                          recordClientAddress: true
+                      ipConfiguration:
+                        - ipv4Enabled: false
+                          privateNetworkRef:
+                            name: platform-vpc
+                providerConfigRef:
+                  name: gcp-provider
+            patches:
+              # Region mapping: AWS region names → GCP region names
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.region
+                toFieldPath: spec.forProvider.region
+                transforms:
+                  - type: map
+                    map:
+                      eu-west-1: europe-west1
+                      eu-central-1: europe-west3
+                      us-east-1: us-east1
+                      us-west-2: us-west1
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.engine
+                toFieldPath: spec.forProvider.databaseVersion
+                transforms:
+                  - type: map
+                    map:
+                      postgres: POSTGRES_15
+                      mysql: MYSQL_8_0
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.size
+                toFieldPath: spec.forProvider.settings[0].tier
+                transforms:
+                  - type: map
+                    map:
+                      small: db-custom-2-4096
+                      medium: db-custom-4-8192
+                      large: db-custom-8-32768
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.highAvailability
+                toFieldPath: spec.forProvider.settings[0].availabilityType
+                transforms:
+                  - type: map
+                    map:
+                      "false": ZONAL
+                      "true": REGIONAL
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.backupRetentionDays
+                toFieldPath: spec.forProvider.settings[0].backupConfiguration[0].transactionLogRetentionDays
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.team
+                toFieldPath: spec.forProvider.settings[0].userLabels["team"]
+              - type: ToCompositeFieldPath
+                fromFieldPath: status.atProvider.publicIpAddress
+                toFieldPath: status.endpoint
+              - type: ToCompositeFieldPath
+                fromFieldPath: status.atProvider.firstIpAddress
+                toFieldPath: status.endpoint
+
+          # --- Cloud SQL Database ---
+          - name: cloudsql-database
+            base:
+              apiVersion: sql.gcp.upbound.io/v1beta1
+              kind: Database
+              spec:
+                forProvider:
+                  charset: UTF8
+                  collation: en_US.UTF8
+                  instanceSelector:
+                    matchControllerRef: true
+                providerConfigRef:
+                  name: gcp-provider
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.team
+                toFieldPath: metadata.labels["team"]
+
+          # --- Cloud SQL User ---
+          - name: cloudsql-user
+            base:
+              apiVersion: sql.gcp.upbound.io/v1beta1
+              kind: User
+              spec:
+                forProvider:
+                  instanceSelector:
+                    matchControllerRef: true
+                  passwordSecretRef:
+                    namespace: crossplane-system
+                    key: password
+                providerConfigRef:
+                  name: gcp-provider
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.team
+                toFieldPath: metadata.labels["team"]

@@ -1,0 +1,108 @@
+# ABOUTME: Azure Composition for DatabaseInstance — maps platform API to FlexibleServer + Database.
+# ABOUTME: Uses Pipeline mode with function-patch-and-transform and region mapping.
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: database-small-azure
+  labels:
+    provider: azure
+    crossplane.io/xrd: xdatabaseinstances.platform.kubecon.io
+spec:
+  compositeTypeRef:
+    apiVersion: platform.kubecon.io/v1alpha1
+    kind: DatabaseInstance
+  mode: Pipeline
+  pipeline:
+    - step: patch-and-transform
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+          # --- Azure Flexible Server ---
+          - name: flexible-server
+            base:
+              apiVersion: dbforpostgresql.azure.upbound.io/v1beta2
+              kind: FlexibleServer
+              spec:
+                forProvider:
+                  administratorLogin: platformadmin
+                  administratorPasswordSecretRef:
+                    namespace: crossplane-system
+                    key: password
+                  skuName: B_Standard_B2s
+                  storageMb: 32768
+                  version: "15"
+                  publicNetworkAccessEnabled: false
+                  autoGrowEnabled: true
+                  backupRetentionDays: 7
+                  geoRedundantBackupEnabled: false
+                  resourceGroupNameSelector:
+                    matchControllerRef: true
+                providerConfigRef:
+                  name: azure-provider
+            patches:
+              # Region mapping: AWS region names → Azure region names
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.region
+                toFieldPath: spec.forProvider.location
+                transforms:
+                  - type: map
+                    map:
+                      eu-west-1: westeurope
+                      eu-central-1: germanywestcentral
+                      us-east-1: eastus
+                      us-west-2: westus2
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.engine
+                toFieldPath: spec.forProvider.version
+                transforms:
+                  - type: map
+                    map:
+                      postgres: "15"
+                      mysql: "8.0.21"
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.size
+                toFieldPath: spec.forProvider.skuName
+                transforms:
+                  - type: map
+                    map:
+                      small: B_Standard_B2s
+                      medium: GP_Standard_D2ds_v4
+                      large: GP_Standard_D4ds_v4
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.highAvailability
+                toFieldPath: spec.forProvider.highAvailability[0].mode
+                transforms:
+                  - type: map
+                    map:
+                      "false": Disabled
+                      "true": ZoneRedundant
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.backupRetentionDays
+                toFieldPath: spec.forProvider.backupRetentionDays
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.team
+                toFieldPath: spec.forProvider.tags["team"]
+              - type: ToCompositeFieldPath
+                fromFieldPath: status.atProvider.fqdn
+                toFieldPath: status.endpoint
+
+          # --- Azure Flexible Server Database ---
+          - name: flexible-server-database
+            base:
+              apiVersion: dbforpostgresql.azure.upbound.io/v1beta1
+              kind: FlexibleServerDatabase
+              spec:
+                forProvider:
+                  charset: UTF8
+                  collation: en_US.utf8
+                  serverIdSelector:
+                    matchControllerRef: true
+                providerConfigRef:
+                  name: azure-provider
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.team
+                toFieldPath: metadata.labels["team"]
