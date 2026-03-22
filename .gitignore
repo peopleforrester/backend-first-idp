@@ -78,3 +78,6 @@ secrets/*
 *.tfstate
 *.tfstate.*
 .terraform/
+
+# CLI binary
+cli/platform
