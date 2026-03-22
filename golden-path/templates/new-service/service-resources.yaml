@@ -1,14 +1,86 @@
 # ABOUTME: Scaffold template for new service onboarding — copy and fill in CHANGEME values.
-# ABOUTME: Provides a starting point for teams requesting platform resources.
+# ABOUTME: Provides all 7 platform resource types as starting points.
+
+# --- Database ---
 apiVersion: platform.kubecon.io/v1alpha1
 kind: DatabaseInstanceClaim
 metadata:
-  name: CHANGEME-db # Replace with your service name
-  namespace: CHANGEME # Replace with your team namespace
+  name: CHANGEME-db
+  namespace: CHANGEME
+  labels:
+    team: CHANGEME
 spec:
   size: small # small | medium | large
   region: eu-west-1 # eu-west-1 | eu-central-1 | us-east-1 | us-west-2
-  team: CHANGEME # Your team name (checkout, payments, analytics, platform)
+  team: CHANGEME
   engine: postgres # postgres | mysql
-  highAvailability: false # Set to true for production workloads
-  backupRetentionDays: 7 # 1-35 days
+  highAvailability: false # set true for production
+  backupRetentionDays: 7 # 1-35 days (>=7 for production)
+---
+# --- Cache ---
+apiVersion: platform.kubecon.io/v1alpha1
+kind: CacheInstanceClaim
+metadata:
+  name: CHANGEME-cache
+  namespace: CHANGEME
+  labels:
+    team: CHANGEME
+spec:
+  size: small
+  region: eu-west-1
+  team: CHANGEME
+  engine: redis # redis | memcached
+---
+# --- Message Queue ---
+apiVersion: platform.kubecon.io/v1alpha1
+kind: MessageQueueClaim
+metadata:
+  name: CHANGEME-events
+  namespace: CHANGEME
+  labels:
+    team: CHANGEME
+spec:
+  region: eu-west-1
+  team: CHANGEME
+  fifo: false # set true for ordered delivery
+  deadLetterQueue: true
+---
+# --- Object Storage ---
+apiVersion: platform.kubecon.io/v1alpha1
+kind: ObjectStorageClaim
+metadata:
+  name: CHANGEME-storage
+  namespace: CHANGEME
+  labels:
+    team: CHANGEME
+spec:
+  region: eu-west-1
+  team: CHANGEME
+  versioning: false
+  encryption: true
+---
+# --- CDN (optional) ---
+apiVersion: platform.kubecon.io/v1alpha1
+kind: CDNDistributionClaim
+metadata:
+  name: CHANGEME-cdn
+  namespace: CHANGEME
+  labels:
+    team: CHANGEME
+spec:
+  team: CHANGEME
+  originDomain: CHANGEME.example.com
+  cacheTtlSeconds: 86400
+---
+# --- Namespace ---
+apiVersion: platform.kubecon.io/v1alpha1
+kind: KubernetesNamespaceClaim
+metadata:
+  name: CHANGEME-ns
+  namespace: CHANGEME
+  labels:
+    team: CHANGEME
+spec:
+  team: CHANGEME
+  cpuLimit: "4"
+  memoryLimit: 8Gi

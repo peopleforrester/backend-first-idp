@@ -1,0 +1,28 @@
+# ABOUTME: Claim that passes all policies but triggers a shadow metric warning.
+# ABOUTME: Demonstrates the semantic gap — valid config, wrong for the workload.
+#
+# This claim is POLICY-COMPLIANT:
+#   - checkout team in eu-west-1 ✓ (region enforcement)
+#   - size small ✓ (checkout capped at medium)
+#   - has team label ✓
+#   - name starts with team ✓
+#
+# But the Shadow Metrics dashboard will flag it:
+#   - database-sizing: checkout handles 50k+ req/day → small is undersized
+#   - ha-requirement: checkout has 99.95% SLO → non-HA is a risk
+#
+# This is the semantic gap. Kyverno says "allowed." Shadow Metrics say "wrong."
+apiVersion: platform.kubecon.io/v1alpha1
+kind: DatabaseInstanceClaim
+metadata:
+  name: checkout-primary-db
+  namespace: checkout
+  labels:
+    team: checkout
+spec:
+  size: small
+  region: eu-west-1
+  team: checkout
+  engine: postgres
+  highAvailability: false
+  backupRetentionDays: 7

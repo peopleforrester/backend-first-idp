@@ -1,5 +1,10 @@
-# ABOUTME: Deliberately failing claim — triggers two OPA violations for demo purposes.
-# ABOUTME: checkout team cannot use us-west-2 (region) or large (size cap is medium).
+# ABOUTME: Deliberately failing claim — triggers multiple Kyverno policy violations.
+# ABOUTME: checkout in us-west-2 (region), large (size cap), missing team label.
+#
+# Violations:
+#   1. region-enforcement: checkout restricted to EU only (PCI-DSS)
+#   2. size-caps: checkout capped at medium, requesting large
+#   3. required-labels: missing team label in metadata.labels
 apiVersion: platform.kubecon.io/v1alpha1
 kind: DatabaseInstanceClaim
 metadata:

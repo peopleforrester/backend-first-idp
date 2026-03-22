@@ -1,0 +1,53 @@
+# ABOUTME: Complete service golden path — DB + cache + queue + storage in one file.
+# ABOUTME: Shows everything a new service needs from the platform in ~30 lines.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: DatabaseInstanceClaim
+metadata:
+  name: catalog-db
+  namespace: catalog
+  labels:
+    team: catalog
+spec:
+  size: medium
+  region: eu-west-1
+  team: catalog
+  engine: postgres
+  backupRetentionDays: 14
+---
+apiVersion: platform.kubecon.io/v1alpha1
+kind: CacheInstanceClaim
+metadata:
+  name: catalog-search-cache
+  namespace: catalog
+  labels:
+    team: catalog
+spec:
+  size: medium
+  region: eu-west-1
+  team: catalog
+  engine: redis
+---
+apiVersion: platform.kubecon.io/v1alpha1
+kind: MessageQueueClaim
+metadata:
+  name: catalog-product-events
+  namespace: catalog
+  labels:
+    team: catalog
+spec:
+  region: eu-west-1
+  team: catalog
+  deadLetterQueue: true
+---
+apiVersion: platform.kubecon.io/v1alpha1
+kind: ObjectStorageClaim
+metadata:
+  name: catalog-image-storage
+  namespace: catalog
+  labels:
+    team: catalog
+spec:
+  region: eu-west-1
+  team: catalog
+  versioning: false
+  encryption: true

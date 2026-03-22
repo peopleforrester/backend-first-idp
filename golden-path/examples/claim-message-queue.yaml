@@ -1,0 +1,14 @@
+# ABOUTME: Working MessageQueue claim — event queue for the checkout team.
+# ABOUTME: Demonstrates the golden path for message queue resources.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: MessageQueueClaim
+metadata:
+  name: checkout-order-events
+  namespace: checkout
+  labels:
+    team: checkout
+spec:
+  region: eu-west-1
+  team: checkout
+  fifo: true
+  deadLetterQueue: true
