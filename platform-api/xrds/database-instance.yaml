@@ -1,0 +1,87 @@
+# ABOUTME: CompositeResourceDefinition for DatabaseInstance — the platform API contract.
+# ABOUTME: Defines the schema that all cloud compositions implement against.
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: xdatabaseinstances.platform.kubecon.io
+spec:
+  group: platform.kubecon.io
+  names:
+    kind: DatabaseInstance
+    plural: databaseinstances
+  claimNames:
+    kind: DatabaseInstanceClaim
+    plural: databaseinstanceclaims
+  connectionSecretKeys:
+    - endpoint
+    - port
+    - username
+    - password
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required:
+                - team
+              properties:
+                size:
+                  type: string
+                  description: Database instance size tier.
+                  enum:
+                    - small
+                    - medium
+                    - large
+                region:
+                  type: string
+                  description: Target deployment region (AWS naming convention, mapped per cloud).
+                  enum:
+                    - eu-west-1
+                    - eu-central-1
+                    - us-east-1
+                    - us-west-2
+                team:
+                  type: string
+                  description: Owning team name. Used for policy enforcement and cost allocation.
+                engine:
+                  type: string
+                  description: Database engine type.
+                  default: postgres
+                  enum:
+                    - postgres
+                    - mysql
+                highAvailability:
+                  type: boolean
+                  description: Enable multi-AZ / regional high availability.
+                  default: false
+                backupRetentionDays:
+                  type: integer
+                  description: Number of days to retain automated backups.
+                  default: 7
+                  minimum: 1
+                  maximum: 35
+            status:
+              type: object
+              properties:
+                connectionSecret:
+                  type: string
+                  description: Name of the Kubernetes Secret containing connection credentials.
+                endpoint:
+                  type: string
+                  description: Database connection endpoint (hostname or IP).
+                port:
+                  type: integer
+                  description: Database connection port.
+                status:
+                  type: string
+                  description: Current provisioning status of the database instance.
+                  enum:
+                    - Provisioning
+                    - Available
+                    - Deleting
+                    - Failed

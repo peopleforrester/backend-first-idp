@@ -1,10 +1,10 @@
 # ABOUTME: Build and test targets for the backend-first IDP repo.
 # ABOUTME: Primary entry point: 'make test' runs all validation suites.
 
-.PHONY: test test-yaml test-shell test-opa test-structure lint clean
+.PHONY: test test-yaml test-shell test-opa test-structure test-xrd lint clean
 
 # Run all tests
-test: test-yaml test-shell test-opa test-structure
+test: test-yaml test-shell test-opa test-xrd test-structure
 
 # Individual test suites
 test-yaml:
@@ -15,6 +15,9 @@ test-shell:
 
 test-opa:
 	@bash tests/opa_test.sh
+
+test-xrd:
+	@bash tests/xrd_test.sh
 
 test-structure:
 	@bash tests/structure_test.sh
