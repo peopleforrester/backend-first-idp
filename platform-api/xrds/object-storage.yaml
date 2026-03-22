@@ -1,0 +1,75 @@
+# ABOUTME: CompositeResourceDefinition for ObjectStorage — S3/GCS/BlobStorage abstraction.
+# ABOUTME: Maps to S3, GCS, or Azure Blob Storage per cloud.
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: xobjectstorages.platform.kubecon.io
+spec:
+  group: platform.kubecon.io
+  names:
+    kind: ObjectStorage
+    plural: objectstorages
+  claimNames:
+    kind: ObjectStorageClaim
+    plural: objectstorageclaims
+  connectionSecretKeys:
+    - endpoint
+    - bucketName
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required:
+                - team
+              properties:
+                region:
+                  type: string
+                  description: Target deployment region.
+                  enum:
+                    - eu-west-1
+                    - eu-central-1
+                    - us-east-1
+                    - us-west-2
+                team:
+                  type: string
+                  description: Owning team name.
+                versioning:
+                  type: boolean
+                  description: Enable object versioning.
+                  default: false
+                lifecycleDays:
+                  type: integer
+                  description: Days before objects transition to cold storage (0 to disable).
+                  default: 0
+                  minimum: 0
+                encryption:
+                  type: boolean
+                  description: Enable server-side encryption.
+                  default: true
+                publicAccess:
+                  type: boolean
+                  description: Allow public read access (use with caution).
+                  default: false
+            status:
+              type: object
+              properties:
+                endpoint:
+                  type: string
+                  description: Bucket endpoint URL.
+                bucketName:
+                  type: string
+                  description: Provisioned bucket name.
+                status:
+                  type: string
+                  description: Current provisioning status.
+                  enum:
+                    - Provisioning
+                    - Available
+                    - Deleting
+                    - Failed

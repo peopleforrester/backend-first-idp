@@ -1,0 +1,62 @@
+# ABOUTME: CompositeResourceDefinition for KubernetesNamespace — Namespace + RBAC + Quota.
+# ABOUTME: Creates a Namespace with RoleBinding and ResourceQuota via Kubernetes provider.
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: xkubernetesnamespaces.platform.kubecon.io
+spec:
+  group: platform.kubecon.io
+  names:
+    kind: KubernetesNamespace
+    plural: kubernetesnamespaces
+  claimNames:
+    kind: KubernetesNamespaceClaim
+    plural: kubernetesnamespaceclaims
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required:
+                - team
+              properties:
+                team:
+                  type: string
+                  description: Owning team name. Used for RBAC binding and label propagation.
+                cpuLimit:
+                  type: string
+                  description: Total CPU limit for the namespace (e.g. "4" or "8").
+                  default: "4"
+                memoryLimit:
+                  type: string
+                  description: Total memory limit for the namespace (e.g. "8Gi" or "16Gi").
+                  default: 8Gi
+                maxPods:
+                  type: integer
+                  description: Maximum number of pods allowed in the namespace.
+                  default: 50
+                  minimum: 1
+                  maximum: 500
+                networkPolicy:
+                  type: boolean
+                  description: Apply default-deny network policy to the namespace.
+                  default: true
+            status:
+              type: object
+              properties:
+                namespaceName:
+                  type: string
+                  description: Name of the provisioned Kubernetes namespace.
+                status:
+                  type: string
+                  description: Current provisioning status.
+                  enum:
+                    - Provisioning
+                    - Available
+                    - Deleting
+                    - Failed

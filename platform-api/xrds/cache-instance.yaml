@@ -1,0 +1,86 @@
+# ABOUTME: CompositeResourceDefinition for CacheInstance — Redis/Memcached abstraction.
+# ABOUTME: Maps to ElastiCache, Memorystore, or Azure Cache for Redis per cloud.
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: xcacheinstances.platform.kubecon.io
+spec:
+  group: platform.kubecon.io
+  names:
+    kind: CacheInstance
+    plural: cacheinstances
+  claimNames:
+    kind: CacheInstanceClaim
+    plural: cacheinstanceclaims
+  connectionSecretKeys:
+    - endpoint
+    - port
+    - password
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required:
+                - team
+              properties:
+                size:
+                  type: string
+                  description: Cache instance size tier.
+                  enum:
+                    - small
+                    - medium
+                    - large
+                region:
+                  type: string
+                  description: Target deployment region.
+                  enum:
+                    - eu-west-1
+                    - eu-central-1
+                    - us-east-1
+                    - us-west-2
+                team:
+                  type: string
+                  description: Owning team name.
+                engine:
+                  type: string
+                  description: Cache engine type.
+                  default: redis
+                  enum:
+                    - redis
+                    - memcached
+                evictionPolicy:
+                  type: string
+                  description: Key eviction policy when memory limit is reached.
+                  default: allkeys-lru
+                  enum:
+                    - allkeys-lru
+                    - volatile-lru
+                    - allkeys-random
+                    - noeviction
+                maxMemoryMb:
+                  type: integer
+                  description: Maximum memory in MB.
+                  default: 1024
+            status:
+              type: object
+              properties:
+                endpoint:
+                  type: string
+                  description: Cache connection endpoint.
+                port:
+                  type: integer
+                  description: Cache connection port.
+                status:
+                  type: string
+                  description: Current provisioning status.
+                  enum:
+                    - Provisioning
+                    - Available
+                    - Deleting
+                    - Failed

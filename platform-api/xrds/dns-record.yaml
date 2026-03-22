@@ -1,0 +1,68 @@
+# ABOUTME: CompositeResourceDefinition for DNSRecord — Route53/CloudDNS/AzureDNS.
+# ABOUTME: Maps to Route53, Cloud DNS, or Azure DNS per cloud.
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: xdnsrecords.platform.kubecon.io
+spec:
+  group: platform.kubecon.io
+  names:
+    kind: DNSRecord
+    plural: dnsrecords
+  claimNames:
+    kind: DNSRecordClaim
+    plural: dnsrecordclaims
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required:
+                - team
+                - recordType
+                - name
+                - value
+              properties:
+                team:
+                  type: string
+                  description: Owning team name.
+                recordType:
+                  type: string
+                  description: DNS record type.
+                  enum:
+                    - A
+                    - AAAA
+                    - CNAME
+                    - TXT
+                    - MX
+                name:
+                  type: string
+                  description: DNS record name (e.g. checkout.platform.kubecon.io).
+                value:
+                  type: string
+                  description: DNS record value (IP, hostname, or text).
+                ttl:
+                  type: integer
+                  description: Time to live in seconds.
+                  default: 300
+                  minimum: 60
+                  maximum: 86400
+            status:
+              type: object
+              properties:
+                fqdn:
+                  type: string
+                  description: Fully qualified domain name as provisioned.
+                status:
+                  type: string
+                  description: Current provisioning status.
+                  enum:
+                    - Provisioning
+                    - Available
+                    - Deleting
+                    - Failed

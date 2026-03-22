@@ -1,0 +1,69 @@
+# ABOUTME: CompositeResourceDefinition for MessageQueue — SQS/PubSub/ServiceBus abstraction.
+# ABOUTME: Maps to SQS+SNS, Pub/Sub, or Azure Service Bus per cloud.
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: xmessagequeues.platform.kubecon.io
+spec:
+  group: platform.kubecon.io
+  names:
+    kind: MessageQueue
+    plural: messagequeues
+  claimNames:
+    kind: MessageQueueClaim
+    plural: messagequeueclaims
+  connectionSecretKeys:
+    - endpoint
+    - arn
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required:
+                - team
+              properties:
+                region:
+                  type: string
+                  description: Target deployment region.
+                  enum:
+                    - eu-west-1
+                    - eu-central-1
+                    - us-east-1
+                    - us-west-2
+                team:
+                  type: string
+                  description: Owning team name.
+                messageRetentionDays:
+                  type: integer
+                  description: Number of days to retain messages.
+                  default: 4
+                  minimum: 1
+                  maximum: 14
+                fifo:
+                  type: boolean
+                  description: Enable FIFO ordering guarantee.
+                  default: false
+                deadLetterQueue:
+                  type: boolean
+                  description: Create an associated dead-letter queue.
+                  default: true
+            status:
+              type: object
+              properties:
+                endpoint:
+                  type: string
+                  description: Queue endpoint URL or ARN.
+                status:
+                  type: string
+                  description: Current provisioning status.
+                  enum:
+                    - Provisioning
+                    - Available
+                    - Deleting
+                    - Failed

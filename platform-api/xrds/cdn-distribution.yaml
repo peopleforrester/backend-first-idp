@@ -1,0 +1,67 @@
+# ABOUTME: CompositeResourceDefinition for CDNDistribution — CloudFront/CloudCDN/FrontDoor.
+# ABOUTME: Maps to CloudFront, Cloud CDN, or Azure Front Door per cloud.
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: xcdndistributions.platform.kubecon.io
+spec:
+  group: platform.kubecon.io
+  names:
+    kind: CDNDistribution
+    plural: cdndistributions
+  claimNames:
+    kind: CDNDistributionClaim
+    plural: cdndistributionclaims
+  connectionSecretKeys:
+    - endpoint
+    - distributionId
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required:
+                - team
+                - originDomain
+              properties:
+                team:
+                  type: string
+                  description: Owning team name.
+                originDomain:
+                  type: string
+                  description: Origin server domain name.
+                cacheTtlSeconds:
+                  type: integer
+                  description: Default cache TTL in seconds.
+                  default: 86400
+                  minimum: 0
+                httpsOnly:
+                  type: boolean
+                  description: Redirect all HTTP traffic to HTTPS.
+                  default: true
+                compressionEnabled:
+                  type: boolean
+                  description: Enable content compression (gzip/brotli).
+                  default: true
+            status:
+              type: object
+              properties:
+                endpoint:
+                  type: string
+                  description: CDN distribution domain name.
+                distributionId:
+                  type: string
+                  description: Cloud-specific distribution identifier.
+                status:
+                  type: string
+                  description: Current provisioning status.
+                  enum:
+                    - Provisioning
+                    - Available
+                    - Deleting
+                    - Failed
