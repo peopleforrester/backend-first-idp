@@ -1,0 +1,15 @@
+# ABOUTME: DatabaseInstanceClaim for search team — search-db.
+# ABOUTME: Generated from scripts/teams.yaml by generate-team-claims.py.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: DatabaseInstanceClaim
+metadata:
+  name: search-db
+  namespace: search
+  labels:
+    team: search
+spec:
+  team: search
+  region: eu-west-1
+  size: medium
+  engine: postgres
+  backupRetentionDays: 7

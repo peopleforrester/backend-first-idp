@@ -1,0 +1,13 @@
+# ABOUTME: KubernetesNamespaceClaim for notifications team — notifications-ns.
+# ABOUTME: Generated from scripts/teams.yaml by generate-team-claims.py.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: KubernetesNamespaceClaim
+metadata:
+  name: notifications-ns
+  namespace: notifications
+  labels:
+    team: notifications
+spec:
+  team: notifications
+  cpuLimit: '4'
+  memoryLimit: 8Gi

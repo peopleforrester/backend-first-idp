@@ -1,0 +1,14 @@
+# ABOUTME: CacheInstanceClaim for analytics team — analytics-cache-dev.
+# ABOUTME: Generated from scripts/teams.yaml by generate-team-claims.py.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: CacheInstanceClaim
+metadata:
+  name: analytics-cache-dev
+  namespace: analytics
+  labels:
+    team: analytics
+spec:
+  team: analytics
+  region: us-east-1
+  size: small
+  engine: redis

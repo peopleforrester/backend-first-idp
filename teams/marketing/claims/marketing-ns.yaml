@@ -1,0 +1,13 @@
+# ABOUTME: KubernetesNamespaceClaim for marketing team — marketing-ns.
+# ABOUTME: Generated from scripts/teams.yaml by generate-team-claims.py.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: KubernetesNamespaceClaim
+metadata:
+  name: marketing-ns
+  namespace: marketing
+  labels:
+    team: marketing
+spec:
+  team: marketing
+  cpuLimit: '4'
+  memoryLimit: 8Gi

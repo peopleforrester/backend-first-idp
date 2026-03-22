@@ -1,0 +1,14 @@
+# ABOUTME: CacheInstanceClaim for checkout team — checkout-cache.
+# ABOUTME: Generated from scripts/teams.yaml by generate-team-claims.py.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: CacheInstanceClaim
+metadata:
+  name: checkout-cache
+  namespace: checkout
+  labels:
+    team: checkout
+spec:
+  team: checkout
+  region: eu-west-1
+  size: small
+  engine: redis

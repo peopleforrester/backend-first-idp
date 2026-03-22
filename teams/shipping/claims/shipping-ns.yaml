@@ -1,0 +1,13 @@
+# ABOUTME: KubernetesNamespaceClaim for shipping team — shipping-ns.
+# ABOUTME: Generated from scripts/teams.yaml by generate-team-claims.py.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: KubernetesNamespaceClaim
+metadata:
+  name: shipping-ns
+  namespace: shipping
+  labels:
+    team: shipping
+spec:
+  team: shipping
+  cpuLimit: '4'
+  memoryLimit: 8Gi

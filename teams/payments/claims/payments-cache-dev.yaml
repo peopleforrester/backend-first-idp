@@ -1,0 +1,14 @@
+# ABOUTME: CacheInstanceClaim for payments team — payments-cache-dev.
+# ABOUTME: Generated from scripts/teams.yaml by generate-team-claims.py.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: CacheInstanceClaim
+metadata:
+  name: payments-cache-dev
+  namespace: payments
+  labels:
+    team: payments
+spec:
+  team: payments
+  region: eu-west-1
+  size: small
+  engine: redis

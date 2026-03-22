@@ -1,0 +1,14 @@
+# ABOUTME: CacheInstanceClaim for identity team — identity-session-cache.
+# ABOUTME: Generated from scripts/teams.yaml by generate-team-claims.py.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: CacheInstanceClaim
+metadata:
+  name: identity-session-cache
+  namespace: identity
+  labels:
+    team: identity
+spec:
+  team: identity
+  region: eu-west-1
+  size: medium
+  engine: redis

@@ -1,0 +1,14 @@
+# ABOUTME: ObjectStorageClaim for marketing team — marketing-assets-storage.
+# ABOUTME: Generated from scripts/teams.yaml by generate-team-claims.py.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: ObjectStorageClaim
+metadata:
+  name: marketing-assets-storage
+  namespace: marketing
+  labels:
+    team: marketing
+spec:
+  team: marketing
+  region: eu-west-1
+  versioning: false
+  encryption: true

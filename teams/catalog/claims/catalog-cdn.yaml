@@ -1,0 +1,14 @@
+# ABOUTME: CDNDistributionClaim for catalog team — catalog-cdn.
+# ABOUTME: Generated from scripts/teams.yaml by generate-team-claims.py.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: CDNDistributionClaim
+metadata:
+  name: catalog-cdn
+  namespace: catalog
+  labels:
+    team: catalog
+spec:
+  team: catalog
+  cacheTtlSeconds: 86400
+  httpsOnly: true
+  originDomain: catalog-images.s3.eu-west-1.amazonaws.com

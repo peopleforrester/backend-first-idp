@@ -1,0 +1,14 @@
+# ABOUTME: MessageQueueClaim for payments team — payments-events.
+# ABOUTME: Generated from scripts/teams.yaml by generate-team-claims.py.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: MessageQueueClaim
+metadata:
+  name: payments-events
+  namespace: payments
+  labels:
+    team: payments
+spec:
+  team: payments
+  region: eu-west-1
+  messageRetentionDays: 4
+  fifo: true

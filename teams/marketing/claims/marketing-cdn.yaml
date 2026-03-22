@@ -1,0 +1,14 @@
+# ABOUTME: CDNDistributionClaim for marketing team — marketing-cdn.
+# ABOUTME: Generated from scripts/teams.yaml by generate-team-claims.py.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: CDNDistributionClaim
+metadata:
+  name: marketing-cdn
+  namespace: marketing
+  labels:
+    team: marketing
+spec:
+  team: marketing
+  cacheTtlSeconds: 86400
+  httpsOnly: true
+  originDomain: marketing-assets.s3.eu-west-1.amazonaws.com

@@ -1,0 +1,216 @@
+# ABOUTME: Team manifest — source of truth for all team claims in the platform.
+# ABOUTME: Used by generate-team-claims.py to produce 100+ claim YAML files.
+
+teams:
+  checkout:
+    region: eu-west-1
+    resources:
+      - type: database
+        name: checkout-db
+        size: small
+      - type: cache
+        name: checkout-cache
+        size: small
+      - type: message-queue
+        name: checkout-events
+      - type: object-storage
+        name: checkout-assets
+      - type: cdn
+        name: checkout-cdn
+        originDomain: checkout-assets.s3.eu-west-1.amazonaws.com
+      - type: namespace
+        name: checkout-ns
+
+  payments:
+    region: eu-west-1
+    resources:
+      - type: database
+        name: payments-db
+        size: medium
+      - type: database
+        name: payments-ledger-db
+        size: large
+        region: eu-central-1
+        highAvailability: true
+        backupRetentionDays: 30
+      - type: cache
+        name: payments-cache
+        size: medium
+      - type: message-queue
+        name: payments-events
+        fifo: true
+      - type: object-storage
+        name: payments-audit-storage
+        region: eu-central-1
+        versioning: true
+      - type: cdn
+        name: payments-receipts-cdn
+        originDomain: payments-receipts.s3.eu-west-1.amazonaws.com
+      - type: namespace
+        name: payments-ns
+
+  analytics:
+    region: us-east-1
+    resources:
+      - type: database
+        name: analytics-warehouse-db
+        size: medium
+      - type: cache
+        name: analytics-cache
+        size: medium
+      - type: message-queue
+        name: analytics-events
+      - type: object-storage
+        name: analytics-datalake
+      - type: cdn
+        name: analytics-reports-cdn
+        originDomain: analytics-reports.s3.us-east-1.amazonaws.com
+      - type: namespace
+        name: analytics-ns
+
+  platform:
+    region: eu-west-1
+    resources:
+      - type: database
+        name: platform-db
+        size: small
+      - type: cache
+        name: platform-cache
+        size: small
+      - type: message-queue
+        name: platform-events
+      - type: object-storage
+        name: platform-state-storage
+        versioning: true
+      - type: namespace
+        name: platform-ns
+
+  identity:
+    region: eu-west-1
+    resources:
+      - type: database
+        name: identity-auth-db
+        size: medium
+        highAvailability: true
+        backupRetentionDays: 14
+      - type: cache
+        name: identity-session-cache
+        size: medium
+      - type: message-queue
+        name: identity-token-events
+      - type: object-storage
+        name: identity-keys-storage
+        versioning: true
+        encryption: true
+      - type: namespace
+        name: identity-ns
+
+  catalog:
+    region: eu-west-1
+    resources:
+      - type: database
+        name: catalog-db
+        size: medium
+      - type: cache
+        name: catalog-search-cache
+        size: medium
+      - type: message-queue
+        name: catalog-product-events
+      - type: object-storage
+        name: catalog-image-storage
+      - type: cdn
+        name: catalog-cdn
+        originDomain: catalog-images.s3.eu-west-1.amazonaws.com
+      - type: namespace
+        name: catalog-ns
+
+  shipping:
+    region: eu-west-1
+    resources:
+      - type: database
+        name: shipping-db
+        size: small
+      - type: cache
+        name: shipping-tracking-cache
+        size: small
+      - type: message-queue
+        name: shipping-events
+      - type: object-storage
+        name: shipping-label-storage
+      - type: namespace
+        name: shipping-ns
+
+  notifications:
+    region: eu-west-1
+    resources:
+      - type: database
+        name: notifications-db
+        size: small
+      - type: cache
+        name: notifications-template-cache
+        size: small
+      - type: message-queue
+        name: notifications-events
+      - type: namespace
+        name: notifications-ns
+
+  inventory:
+    region: eu-west-1
+    resources:
+      - type: database
+        name: inventory-db
+        size: small
+      - type: cache
+        name: inventory-stock-cache
+        size: small
+      - type: message-queue
+        name: inventory-events
+      - type: namespace
+        name: inventory-ns
+
+  search:
+    region: eu-west-1
+    resources:
+      - type: database
+        name: search-db
+        size: medium
+      - type: cache
+        name: search-cache
+        size: medium
+      - type: object-storage
+        name: search-index-storage
+      - type: namespace
+        name: search-ns
+
+  billing:
+    region: eu-central-1
+    resources:
+      - type: database
+        name: billing-db
+        size: medium
+        highAvailability: true
+        backupRetentionDays: 30
+      - type: object-storage
+        name: billing-invoice-storage
+        versioning: true
+      - type: message-queue
+        name: billing-events
+      - type: namespace
+        name: billing-ns
+
+  marketing:
+    region: eu-west-1
+    resources:
+      - type: database
+        name: marketing-db
+        size: small
+      - type: cache
+        name: marketing-campaign-cache
+        size: small
+      - type: object-storage
+        name: marketing-assets-storage
+      - type: cdn
+        name: marketing-cdn
+        originDomain: marketing-assets.s3.eu-west-1.amazonaws.com
+      - type: namespace
+        name: marketing-ns

@@ -1,0 +1,13 @@
+# ABOUTME: KubernetesNamespaceClaim for platform team — platform-ns.
+# ABOUTME: Generated from scripts/teams.yaml by generate-team-claims.py.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: KubernetesNamespaceClaim
+metadata:
+  name: platform-ns
+  namespace: platform
+  labels:
+    team: platform
+spec:
+  team: platform
+  cpuLimit: '4'
+  memoryLimit: 8Gi

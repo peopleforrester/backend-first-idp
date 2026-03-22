@@ -1,0 +1,16 @@
+# ABOUTME: DatabaseInstanceClaim for payments team — payments-ledger-db.
+# ABOUTME: Generated from scripts/teams.yaml by generate-team-claims.py.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: DatabaseInstanceClaim
+metadata:
+  name: payments-ledger-db
+  namespace: payments
+  labels:
+    team: payments
+spec:
+  team: payments
+  region: eu-central-1
+  size: large
+  engine: postgres
+  highAvailability: true
+  backupRetentionDays: 30

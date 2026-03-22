@@ -1,0 +1,14 @@
+# ABOUTME: CacheInstanceClaim for search team — search-cache-dev.
+# ABOUTME: Generated from scripts/teams.yaml by generate-team-claims.py.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: CacheInstanceClaim
+metadata:
+  name: search-cache-dev
+  namespace: search
+  labels:
+    team: search
+spec:
+  team: search
+  region: eu-west-1
+  size: small
+  engine: redis

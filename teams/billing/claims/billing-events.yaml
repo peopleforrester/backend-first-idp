@@ -1,0 +1,14 @@
+# ABOUTME: MessageQueueClaim for billing team — billing-events.
+# ABOUTME: Generated from scripts/teams.yaml by generate-team-claims.py.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: MessageQueueClaim
+metadata:
+  name: billing-events
+  namespace: billing
+  labels:
+    team: billing
+spec:
+  team: billing
+  region: eu-central-1
+  messageRetentionDays: 4
+  fifo: false

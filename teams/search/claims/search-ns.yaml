@@ -1,0 +1,13 @@
+# ABOUTME: KubernetesNamespaceClaim for search team — search-ns.
+# ABOUTME: Generated from scripts/teams.yaml by generate-team-claims.py.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: KubernetesNamespaceClaim
+metadata:
+  name: search-ns
+  namespace: search
+  labels:
+    team: search
+spec:
+  team: search
+  cpuLimit: '4'
+  memoryLimit: 8Gi

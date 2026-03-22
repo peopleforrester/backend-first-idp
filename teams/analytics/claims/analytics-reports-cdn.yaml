@@ -1,0 +1,14 @@
+# ABOUTME: CDNDistributionClaim for analytics team — analytics-reports-cdn.
+# ABOUTME: Generated from scripts/teams.yaml by generate-team-claims.py.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: CDNDistributionClaim
+metadata:
+  name: analytics-reports-cdn
+  namespace: analytics
+  labels:
+    team: analytics
+spec:
+  team: analytics
+  cacheTtlSeconds: 86400
+  httpsOnly: true
+  originDomain: analytics-reports.s3.us-east-1.amazonaws.com

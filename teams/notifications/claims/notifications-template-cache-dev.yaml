@@ -1,0 +1,14 @@
+# ABOUTME: CacheInstanceClaim for notifications team — notifications-template-cache-dev.
+# ABOUTME: Generated from scripts/teams.yaml by generate-team-claims.py.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: CacheInstanceClaim
+metadata:
+  name: notifications-template-cache-dev
+  namespace: notifications
+  labels:
+    team: notifications
+spec:
+  team: notifications
+  region: eu-west-1
+  size: small
+  engine: redis

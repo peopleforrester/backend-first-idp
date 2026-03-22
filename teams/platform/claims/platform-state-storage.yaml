@@ -1,0 +1,14 @@
+# ABOUTME: ObjectStorageClaim for platform team — platform-state-storage.
+# ABOUTME: Generated from scripts/teams.yaml by generate-team-claims.py.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: ObjectStorageClaim
+metadata:
+  name: platform-state-storage
+  namespace: platform
+  labels:
+    team: platform
+spec:
+  team: platform
+  region: eu-west-1
+  encryption: true
+  versioning: true

@@ -1,0 +1,15 @@
+# ABOUTME: DatabaseInstanceClaim for billing team — billing-db-staging.
+# ABOUTME: Generated from scripts/teams.yaml by generate-team-claims.py.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: DatabaseInstanceClaim
+metadata:
+  name: billing-db-staging
+  namespace: billing
+  labels:
+    team: billing
+spec:
+  team: billing
+  region: eu-central-1
+  size: small
+  engine: postgres
+  backupRetentionDays: 3

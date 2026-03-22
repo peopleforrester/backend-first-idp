@@ -1,0 +1,14 @@
+# ABOUTME: ObjectStorageClaim for search team — search-index-storage.
+# ABOUTME: Generated from scripts/teams.yaml by generate-team-claims.py.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: ObjectStorageClaim
+metadata:
+  name: search-index-storage
+  namespace: search
+  labels:
+    team: search
+spec:
+  team: search
+  region: eu-west-1
+  versioning: false
+  encryption: true

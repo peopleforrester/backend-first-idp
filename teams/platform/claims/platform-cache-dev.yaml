@@ -1,0 +1,14 @@
+# ABOUTME: CacheInstanceClaim for platform team — platform-cache-dev.
+# ABOUTME: Generated from scripts/teams.yaml by generate-team-claims.py.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: CacheInstanceClaim
+metadata:
+  name: platform-cache-dev
+  namespace: platform
+  labels:
+    team: platform
+spec:
+  team: platform
+  region: eu-west-1
+  size: small
+  engine: redis

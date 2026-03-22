@@ -1,0 +1,14 @@
+# ABOUTME: CDNDistributionClaim for payments team — payments-receipts-cdn.
+# ABOUTME: Generated from scripts/teams.yaml by generate-team-claims.py.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: CDNDistributionClaim
+metadata:
+  name: payments-receipts-cdn
+  namespace: payments
+  labels:
+    team: payments
+spec:
+  team: payments
+  cacheTtlSeconds: 86400
+  httpsOnly: true
+  originDomain: payments-receipts.s3.eu-west-1.amazonaws.com

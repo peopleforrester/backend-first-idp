@@ -1,0 +1,15 @@
+# ABOUTME: DatabaseInstanceClaim for shipping team — shipping-db-staging.
+# ABOUTME: Generated from scripts/teams.yaml by generate-team-claims.py.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: DatabaseInstanceClaim
+metadata:
+  name: shipping-db-staging
+  namespace: shipping
+  labels:
+    team: shipping
+spec:
+  team: shipping
+  region: eu-west-1
+  size: small
+  engine: postgres
+  backupRetentionDays: 7

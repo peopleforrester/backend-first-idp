@@ -1,0 +1,14 @@
+# ABOUTME: MessageQueueClaim for identity team — identity-token-events.
+# ABOUTME: Generated from scripts/teams.yaml by generate-team-claims.py.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: MessageQueueClaim
+metadata:
+  name: identity-token-events
+  namespace: identity
+  labels:
+    team: identity
+spec:
+  team: identity
+  region: eu-west-1
+  messageRetentionDays: 4
+  fifo: false

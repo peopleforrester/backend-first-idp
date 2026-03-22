@@ -1,0 +1,14 @@
+# ABOUTME: MessageQueueClaim for catalog team — catalog-product-events.
+# ABOUTME: Generated from scripts/teams.yaml by generate-team-claims.py.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: MessageQueueClaim
+metadata:
+  name: catalog-product-events
+  namespace: catalog
+  labels:
+    team: catalog
+spec:
+  team: catalog
+  region: eu-west-1
+  messageRetentionDays: 4
+  fifo: false

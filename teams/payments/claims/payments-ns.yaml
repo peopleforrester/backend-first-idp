@@ -1,0 +1,13 @@
+# ABOUTME: KubernetesNamespaceClaim for payments team — payments-ns.
+# ABOUTME: Generated from scripts/teams.yaml by generate-team-claims.py.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: KubernetesNamespaceClaim
+metadata:
+  name: payments-ns
+  namespace: payments
+  labels:
+    team: payments
+spec:
+  team: payments
+  cpuLimit: '4'
+  memoryLimit: 8Gi

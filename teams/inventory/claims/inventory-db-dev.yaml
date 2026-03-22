@@ -1,0 +1,15 @@
+# ABOUTME: DatabaseInstanceClaim for inventory team — inventory-db-dev.
+# ABOUTME: Generated from scripts/teams.yaml by generate-team-claims.py.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: DatabaseInstanceClaim
+metadata:
+  name: inventory-db-dev
+  namespace: inventory
+  labels:
+    team: inventory
+spec:
+  team: inventory
+  region: eu-west-1
+  size: small
+  engine: postgres
+  backupRetentionDays: 7

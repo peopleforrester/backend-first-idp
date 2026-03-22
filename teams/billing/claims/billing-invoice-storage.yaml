@@ -1,0 +1,14 @@
+# ABOUTME: ObjectStorageClaim for billing team — billing-invoice-storage.
+# ABOUTME: Generated from scripts/teams.yaml by generate-team-claims.py.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: ObjectStorageClaim
+metadata:
+  name: billing-invoice-storage
+  namespace: billing
+  labels:
+    team: billing
+spec:
+  team: billing
+  region: eu-central-1
+  encryption: true
+  versioning: true

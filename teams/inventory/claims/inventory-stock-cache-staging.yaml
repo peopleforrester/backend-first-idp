@@ -1,0 +1,14 @@
+# ABOUTME: CacheInstanceClaim for inventory team — inventory-stock-cache-staging.
+# ABOUTME: Generated from scripts/teams.yaml by generate-team-claims.py.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: CacheInstanceClaim
+metadata:
+  name: inventory-stock-cache-staging
+  namespace: inventory
+  labels:
+    team: inventory
+spec:
+  team: inventory
+  region: eu-west-1
+  size: small
+  engine: redis

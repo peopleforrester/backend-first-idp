@@ -1,0 +1,15 @@
+# ABOUTME: DatabaseInstanceClaim for notifications team — notifications-db-staging.
+# ABOUTME: Generated from scripts/teams.yaml by generate-team-claims.py.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: DatabaseInstanceClaim
+metadata:
+  name: notifications-db-staging
+  namespace: notifications
+  labels:
+    team: notifications
+spec:
+  team: notifications
+  region: eu-west-1
+  size: small
+  engine: postgres
+  backupRetentionDays: 7
