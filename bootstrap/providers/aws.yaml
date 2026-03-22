@@ -1,0 +1,47 @@
+# ABOUTME: Upbound provider-family-aws with ProviderConfig using IRSA authentication.
+# ABOUTME: Requires IAM role with appropriate permissions attached to the Crossplane SA.
+apiVersion: pkg.crossplane.io/v1
+kind: Provider
+metadata:
+  name: provider-family-aws
+spec:
+  package: xpkg.upbound.io/upbound/provider-family-aws:v1.17.0
+  runtimeConfigRef:
+    name: default
+---
+apiVersion: pkg.crossplane.io/v1
+kind: Provider
+metadata:
+  name: provider-aws-rds
+spec:
+  package: xpkg.upbound.io/upbound/provider-aws-rds:v1.17.0
+  runtimeConfigRef:
+    name: default
+---
+apiVersion: pkg.crossplane.io/v1
+kind: Provider
+metadata:
+  name: provider-aws-iam
+spec:
+  package: xpkg.upbound.io/upbound/provider-aws-iam:v1.17.0
+  runtimeConfigRef:
+    name: default
+---
+apiVersion: pkg.crossplane.io/v1
+kind: Provider
+metadata:
+  name: provider-aws-ec2
+spec:
+  package: xpkg.upbound.io/upbound/provider-aws-ec2:v1.17.0
+  runtimeConfigRef:
+    name: default
+---
+# ProviderConfig using IRSA (IAM Roles for Service Accounts)
+# The crossplane-system ServiceAccount must have the appropriate IAM role annotation.
+apiVersion: aws.upbound.io/v1beta1
+kind: ProviderConfig
+metadata:
+  name: aws-provider
+spec:
+  credentials:
+    source: IRSA
