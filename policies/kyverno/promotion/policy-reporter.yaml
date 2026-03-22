@@ -1,0 +1,32 @@
+# ABOUTME: Kyverno PolicyReport aggregation config for violation visibility.
+# ABOUTME: Enables policy reporting across all namespaces for the Grafana dashboard.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kyverno-policy-reporter-config
+  namespace: kyverno
+  labels:
+    platform.kubecon.io/managed: "true"
+data:
+  config.yaml: |
+    # Kyverno 1.17 has built-in PolicyReport generation.
+    # This ConfigMap configures reporting behavior.
+    reportFilter:
+      # Report on all platform claim types
+      resources:
+        - apiVersion: platform.kubecon.io/v1alpha1
+          kind: DatabaseInstanceClaim
+        - apiVersion: platform.kubecon.io/v1alpha1
+          kind: CacheInstanceClaim
+        - apiVersion: platform.kubecon.io/v1alpha1
+          kind: MessageQueueClaim
+        - apiVersion: platform.kubecon.io/v1alpha1
+          kind: ObjectStorageClaim
+        - apiVersion: platform.kubecon.io/v1alpha1
+          kind: CDNDistributionClaim
+        - apiVersion: platform.kubecon.io/v1alpha1
+          kind: DNSRecordClaim
+        - apiVersion: platform.kubecon.io/v1alpha1
+          kind: KubernetesNamespaceClaim
+    # Keep reports for 30 days
+    reportRetentionDays: 30

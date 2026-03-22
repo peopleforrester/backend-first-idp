@@ -1,0 +1,20 @@
+# ABOUTME: Dev environment policy overlay — all policies in Audit mode.
+# ABOUTME: Violations are logged but not blocked, enabling safe policy development.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../cluster-policies/region-enforcement.yaml
+  - ../../cluster-policies/size-caps.yaml
+  - ../../cluster-policies/required-labels.yaml
+  - ../../cluster-policies/naming-conventions.yaml
+  - ../../cluster-policies/backup-retention-minimum.yaml
+  - ../../cluster-policies/ha-enforcement.yaml
+
+patches:
+  - target:
+      kind: ClusterPolicy
+    patch: |
+      - op: replace
+        path: /spec/validationFailureAction
+        value: Audit

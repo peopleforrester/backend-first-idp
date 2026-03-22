@@ -1,0 +1,22 @@
+# ABOUTME: Production environment policy overlay — all policies enforced.
+# ABOUTME: Every policy blocks non-compliant resources. No exceptions without PolicyException CR.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../cluster-policies/region-enforcement.yaml
+  - ../../cluster-policies/size-caps.yaml
+  - ../../cluster-policies/required-labels.yaml
+  - ../../cluster-policies/naming-conventions.yaml
+  - ../../cluster-policies/backup-retention-minimum.yaml
+  - ../../cluster-policies/ha-enforcement.yaml
+  - ../../policy-exceptions/platform-team-exceptions.yaml
+
+patches:
+  # All policies enforced in production
+  - target:
+      kind: ClusterPolicy
+    patch: |
+      - op: replace
+        path: /spec/validationFailureAction
+        value: Enforce

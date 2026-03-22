@@ -1,0 +1,46 @@
+# ABOUTME: Staging environment policy overlay — critical policies enforced, others audited.
+# ABOUTME: Region and size enforcement active; governance policies still in Audit mode.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../cluster-policies/region-enforcement.yaml
+  - ../../cluster-policies/size-caps.yaml
+  - ../../cluster-policies/required-labels.yaml
+  - ../../cluster-policies/naming-conventions.yaml
+  - ../../cluster-policies/backup-retention-minimum.yaml
+  - ../../cluster-policies/ha-enforcement.yaml
+
+patches:
+  # Default: Audit mode for all policies
+  - target:
+      kind: ClusterPolicy
+    patch: |
+      - op: replace
+        path: /spec/validationFailureAction
+        value: Audit
+
+  # Override: Enforce critical compliance policies
+  - target:
+      kind: ClusterPolicy
+      name: region-enforcement
+    patch: |
+      - op: replace
+        path: /spec/validationFailureAction
+        value: Enforce
+
+  - target:
+      kind: ClusterPolicy
+      name: size-caps
+    patch: |
+      - op: replace
+        path: /spec/validationFailureAction
+        value: Enforce
+
+  - target:
+      kind: ClusterPolicy
+      name: backup-retention-minimum
+    patch: |
+      - op: replace
+        path: /spec/validationFailureAction
+        value: Enforce
