@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ABOUTME: Structure test — asserts all expected files exist in the repo.
+# ABOUTME: Structure test — asserts all expected v2 files exist in the repo.
 # ABOUTME: Run via 'make test-structure' or directly with bash.
 
 set -euo pipefail
@@ -7,16 +7,12 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PASS=0
 FAIL=0
-SKIP=0
 
 # Colors (disable if not a terminal)
 if [[ -t 1 ]]; then
-    GREEN='\033[0;32m'
-    RED='\033[0;31m'
-    YELLOW='\033[0;33m'
-    NC='\033[0m'
+    GREEN='\033[0;32m' RED='\033[0;31m' NC='\033[0m'
 else
-    GREEN='' RED='' YELLOW='' NC=''
+    GREEN='' RED='' NC=''
 fi
 
 assert_file_exists() {
@@ -43,64 +39,164 @@ assert_dir_exists() {
     fi
 }
 
-
-echo "=== Structure Tests ==="
+echo "=== Structure Tests (v2) ==="
 echo ""
 
+# --- Root files ---
 echo "--- Root files ---"
-assert_file_exists "README.md" "README.md exists"
-assert_file_exists "LICENSE" "LICENSE exists"
-assert_file_exists "DEMO.md" "DEMO.md exists"
-assert_file_exists ".yamllint.yml" "yamllint config exists"
-assert_file_exists "Makefile" "Makefile exists"
+assert_file_exists "README.md" "README.md"
+assert_file_exists "LICENSE" "LICENSE"
+assert_file_exists "DEMO.md" "DEMO.md"
+assert_file_exists ".yamllint.yml" "yamllint config"
+assert_file_exists "Makefile" "Makefile"
+assert_file_exists ".github/workflows/test.yml" "GitHub Actions CI"
 
+# --- XRDs (7 resource types) ---
 echo ""
-echo "--- Platform API ---"
-assert_dir_exists "platform-api/xrds" "XRD directory exists"
-assert_file_exists "platform-api/xrds/database-instance.yaml" "DatabaseInstance XRD"
-assert_dir_exists "platform-api/compositions/aws" "AWS compositions directory"
-assert_file_exists "platform-api/compositions/aws/database-small.yaml" "AWS database composition"
-assert_dir_exists "platform-api/compositions/gcp" "GCP compositions directory"
-assert_file_exists "platform-api/compositions/gcp/database-small.yaml" "GCP database composition"
-assert_dir_exists "platform-api/compositions/azure" "Azure compositions directory"
-assert_file_exists "platform-api/compositions/azure/database-small.yaml" "Azure database composition"
+echo "--- Platform API: XRDs (7) ---"
+assert_dir_exists "platform-api/xrds" "XRD directory"
+XRD_TYPES=("database-instance" "cache-instance" "message-queue" "object-storage" "cdn-distribution" "dns-record" "kubernetes-namespace")
+for xrd in "${XRD_TYPES[@]}"; do
+    assert_file_exists "platform-api/xrds/${xrd}.yaml" "XRD: ${xrd}"
+done
 
+# --- Compositions (7 types × 3 clouds = 21) ---
 echo ""
-echo "--- Policies ---"
-assert_file_exists "policies/opa/region-allowed.rego" "OPA region policy"
-assert_file_exists "policies/opa/size-limits.rego" "OPA size limits policy"
-assert_file_exists "policies/opa/region-allowed_test.rego" "OPA region policy tests"
-assert_file_exists "policies/opa/size-limits_test.rego" "OPA size limits policy tests"
-assert_file_exists "policies/gatekeeper/constraint-templates/platform-validation.yaml" "Gatekeeper ConstraintTemplate"
+echo "--- Platform API: Compositions (21) ---"
+CLOUDS=("aws" "gcp" "azure")
+COMP_FILES=("database-small" "cache-small" "message-queue-small" "object-storage" "cdn-distribution" "dns-record" "namespace")
+for cloud in "${CLOUDS[@]}"; do
+    assert_dir_exists "platform-api/compositions/${cloud}" "${cloud} compositions dir"
+    for comp in "${COMP_FILES[@]}"; do
+        assert_file_exists "platform-api/compositions/${cloud}/${comp}.yaml" "${cloud}/${comp}"
+    done
+done
 
+# --- Shadow Metrics ---
+echo ""
+echo "--- Shadow Metrics ---"
+assert_file_exists "platform-api/shadow-metrics/shadow-metric-crd.yaml" "ShadowMetricRule CRD"
+assert_file_exists "platform-api/shadow-metrics/README.md" "Shadow Metrics README"
+SHADOW_RULES=("database-sizing" "region-latency" "cost-efficiency" "ha-requirement")
+for rule in "${SHADOW_RULES[@]}"; do
+    assert_file_exists "platform-api/shadow-metrics/rules/${rule}.yaml" "Shadow rule: ${rule}"
+done
+assert_file_exists "platform-api/shadow-metrics/functions/function-shadow-metrics.yaml" "Shadow Metrics function"
+
+# --- Drift Detection ---
+echo ""
+echo "--- Drift Detection ---"
+assert_file_exists "platform-api/drift-detection/drift-check-cronjob.yaml" "Drift CronJob"
+assert_file_exists "platform-api/drift-detection/scripts/check-drift.sh" "Drift check script"
+assert_file_exists "platform-api/drift-detection/prometheus-rule-drift.yaml" "Drift alert rule"
+
+# --- Kyverno Policies (6 cluster policies) ---
+echo ""
+echo "--- Kyverno Policies ---"
+assert_dir_exists "policies/kyverno/cluster-policies" "Kyverno cluster-policies dir"
+KYVERNO_POLICIES=("region-enforcement" "size-caps" "required-labels" "naming-conventions" "backup-retention-minimum" "ha-enforcement")
+for policy in "${KYVERNO_POLICIES[@]}"; do
+    assert_file_exists "policies/kyverno/cluster-policies/${policy}.yaml" "Policy: ${policy}"
+done
+assert_file_exists "policies/kyverno/policy-exceptions/platform-team-exceptions.yaml" "Policy exceptions"
+
+# --- Kyverno Policy Tests ---
+echo ""
+echo "--- Kyverno Policy Tests ---"
+for policy in "region-enforcement" "size-caps"; do
+    assert_file_exists "policies/kyverno/policy-tests/${policy}/resource-pass.yaml" "${policy} pass resource"
+    assert_file_exists "policies/kyverno/policy-tests/${policy}/resource-fail.yaml" "${policy} fail resource"
+done
+
+# --- Policy Promotion ---
+echo ""
+echo "--- Policy Promotion ---"
+for env in "dev" "staging" "production"; do
+    assert_file_exists "policies/kyverno/promotion/${env}/kustomization.yaml" "Promotion: ${env}"
+done
+
+# --- GitOps ---
 echo ""
 echo "--- GitOps ---"
 assert_file_exists "gitops/argocd/appset-platform.yaml" "ArgoCD ApplicationSet"
 assert_file_exists "gitops/kustomize/base/kustomization.yaml" "Kustomize base"
-assert_file_exists "gitops/kustomize/overlays/aws/kustomization.yaml" "Kustomize AWS overlay"
-assert_file_exists "gitops/kustomize/overlays/gcp/kustomization.yaml" "Kustomize GCP overlay"
-assert_file_exists "gitops/kustomize/overlays/azure/kustomization.yaml" "Kustomize Azure overlay"
+for cloud in "${CLOUDS[@]}"; do
+    assert_file_exists "gitops/kustomize/overlays/${cloud}/kustomization.yaml" "Kustomize ${cloud} overlay"
+done
+for env in "dev" "staging" "production"; do
+    assert_file_exists "gitops/kustomize/overlays/${env}/kustomization.yaml" "Kustomize ${env} overlay"
+done
 
+# --- Golden Path ---
 echo ""
 echo "--- Golden Path ---"
-assert_file_exists "golden-path/examples/claim-database.yaml" "Working claim example"
-assert_file_exists "golden-path/examples/claim-database-WILL-FAIL.yaml" "Failing claim example"
+assert_file_exists "golden-path/examples/claim-database.yaml" "Working DB claim"
+assert_file_exists "golden-path/examples/claim-database-WILL-FAIL.yaml" "Failing DB claim"
+assert_file_exists "golden-path/examples/claim-cache.yaml" "Cache claim"
+assert_file_exists "golden-path/examples/claim-message-queue.yaml" "Message queue claim"
+assert_file_exists "golden-path/examples/claim-full-service.yaml" "Full service claim"
+assert_file_exists "golden-path/examples/claim-shadow-metric-warning.yaml" "Shadow metric warning claim"
 assert_file_exists "golden-path/templates/new-service/service-resources.yaml" "Service template"
 
+# --- Teams (12 teams, 100+ claims) ---
+echo ""
+echo "--- Teams ---"
+TEAMS=("checkout" "payments" "analytics" "platform" "identity" "catalog" "shipping" "notifications" "inventory" "search" "billing" "marketing")
+for team in "${TEAMS[@]}"; do
+    assert_dir_exists "teams/${team}/claims" "Team: ${team}/claims"
+done
+assert_file_exists "scripts/generate-team-claims.py" "Claim generator script"
+assert_file_exists "scripts/teams.yaml" "Team manifest"
+
+# --- Secrets / ESO ---
+echo ""
+echo "--- External Secrets Operator ---"
+for cloud in "${CLOUDS[@]}"; do
+    assert_file_exists "secrets/eso/cluster-secret-store-${cloud}.yaml" "ESO SecretStore: ${cloud}"
+done
+assert_file_exists "secrets/eso/external-secrets/database-credentials.yaml" "ESO: DB credentials"
+assert_file_exists "secrets/eso/external-secrets/provider-credentials.yaml" "ESO: provider credentials"
+assert_file_exists "secrets/eso/external-secrets/tls-certificates.yaml" "ESO: TLS certs"
+
+# --- Observability ---
+echo ""
+echo "--- Observability ---"
+assert_file_exists "observability/opentelemetry/collector-agent.yaml" "OTel agent"
+assert_file_exists "observability/opentelemetry/collector-gateway.yaml" "OTel gateway"
+assert_file_exists "observability/opentelemetry/instrumentation.yaml" "OTel instrumentation"
+assert_file_exists "observability/opentelemetry/rbac.yaml" "OTel RBAC"
+assert_file_exists "observability/prometheus/values-platform.yaml" "Prometheus values"
+assert_file_exists "observability/prometheus/platform-rules/crossplane-alerts.yaml" "Crossplane alerts"
+assert_file_exists "observability/prometheus/platform-rules/claim-latency.yaml" "Claim latency alerts"
+assert_file_exists "observability/prometheus/platform-rules/drift-detection.yaml" "Drift detection alerts"
+assert_file_exists "observability/prometheus/service-monitors/crossplane.yaml" "Crossplane ServiceMonitor"
+assert_file_exists "observability/prometheus/service-monitors/argocd.yaml" "ArgoCD ServiceMonitor"
+assert_file_exists "observability/prometheus/service-monitors/kyverno.yaml" "Kyverno ServiceMonitor"
+assert_file_exists "observability/opencost/values-platform.yaml" "OpenCost values"
+DASHBOARDS=("platform-overview" "claim-lifecycle" "policy-violations" "cost-per-team" "shadow-metrics")
+for dash in "${DASHBOARDS[@]}"; do
+    assert_file_exists "observability/grafana/dashboards/${dash}.json" "Dashboard: ${dash}"
+done
+
+# --- Bootstrap ---
 echo ""
 echo "--- Bootstrap ---"
-assert_file_exists "bootstrap/install.sh" "Bootstrap install script"
-assert_file_exists "bootstrap/providers/aws.yaml" "AWS provider config"
-assert_file_exists "bootstrap/providers/gcp.yaml" "GCP provider config"
-assert_file_exists "bootstrap/providers/azure.yaml" "Azure provider config"
+assert_file_exists "bootstrap/install.sh" "Bootstrap script"
+for cloud in "${CLOUDS[@]}"; do
+    assert_file_exists "bootstrap/providers/${cloud}.yaml" "Provider: ${cloud}"
+done
 
+# --- Documentation ---
 echo ""
 echo "--- Documentation ---"
-assert_file_exists "docs/architecture.md" "Architecture doc"
+DOCS=("architecture" "semantic-gap" "shadow-metrics" "policy-promotion" "composition-drift" "why-kyverno")
+for doc in "${DOCS[@]}"; do
+    assert_file_exists "docs/${doc}.md" "Doc: ${doc}"
+done
 
 echo ""
 echo "=== Results ==="
-echo -e "  ${GREEN}Passed: ${PASS}${NC}  ${RED}Failed: ${FAIL}${NC}  ${YELLOW}Skipped: ${SKIP}${NC}"
+echo -e "  ${GREEN}Passed: ${PASS}${NC}  ${RED}Failed: ${FAIL}${NC}"
 echo ""
 
 if [[ ${FAIL} -gt 0 ]]; then

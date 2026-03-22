@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# ABOUTME: Golden path integration test — validates claims against OPA policies.
-# ABOUTME: Confirms working claim passes and failing claim produces exactly 2 violations.
+# ABOUTME: Golden path integration test — validates claim examples exist and are well-formed.
+# ABOUTME: Policy integration tests run via kyverno_test.sh; this covers structure and content.
 
 set -euo pipefail
 
@@ -30,25 +30,39 @@ assert() {
 echo "=== Golden Path Tests ==="
 echo ""
 
-GOOD_CLAIM="${REPO_ROOT}/golden-path/examples/claim-database.yaml"
-BAD_CLAIM="${REPO_ROOT}/golden-path/examples/claim-database-WILL-FAIL.yaml"
+EXAMPLES_DIR="${REPO_ROOT}/golden-path/examples"
 TEMPLATE="${REPO_ROOT}/golden-path/templates/new-service/service-resources.yaml"
-POLICY_DIR="${REPO_ROOT}/policies/opa"
 
+# --- File existence ---
 echo "--- File existence ---"
-assert "Working claim exists" "$([[ -f "${GOOD_CLAIM}" ]] && echo true || echo false)"
-assert "Failing claim exists" "$([[ -f "${BAD_CLAIM}" ]] && echo true || echo false)"
+EXPECTED_EXAMPLES=("claim-database" "claim-database-WILL-FAIL" "claim-cache" "claim-message-queue" "claim-full-service" "claim-shadow-metric-warning")
+for ex in "${EXPECTED_EXAMPLES[@]}"; do
+    assert "${ex}.yaml exists" "$([[ -f "${EXAMPLES_DIR}/${ex}.yaml" ]] && echo true || echo false)"
+done
 assert "Service template exists" "$([[ -f "${TEMPLATE}" ]] && echo true || echo false)"
 
+# --- YAML validity ---
 echo ""
 echo "--- YAML validity ---"
-assert "Working claim valid YAML" "$(yamllint -c "${REPO_ROOT}/.yamllint.yml" "${GOOD_CLAIM}" 2>&1 && echo true || echo false)"
-assert "Failing claim valid YAML" "$(yamllint -c "${REPO_ROOT}/.yamllint.yml" "${BAD_CLAIM}" 2>&1 && echo true || echo false)"
-assert "Service template valid YAML" "$(yamllint -c "${REPO_ROOT}/.yamllint.yml" "${TEMPLATE}" 2>&1 && echo true || echo false)"
+for f in "${EXAMPLES_DIR}"/*.yaml; do
+    [[ -f "${f}" ]] || continue
+    name="$(basename "${f}")"
+    yaml_valid=$(yamllint -c "${REPO_ROOT}/.yamllint.yml" "${f}" 2>&1 && echo true || echo false)
+    assert "${name} valid YAML" "${yaml_valid}"
+done
+if [[ -f "${TEMPLATE}" ]]; then
+    yaml_valid=$(yamllint -c "${REPO_ROOT}/.yamllint.yml" "${TEMPLATE}" 2>&1 && echo true || echo false)
+    assert "Service template valid YAML" "${yaml_valid}"
+fi
 
+# --- Content checks on core claims ---
 echo ""
 echo "--- Claim content ---"
-CLAIM_CHECKS=$(GOOD="${GOOD_CLAIM}" BAD="${BAD_CLAIM}" python3 << 'PYEOF'
+GOOD_CLAIM="${EXAMPLES_DIR}/claim-database.yaml"
+BAD_CLAIM="${EXAMPLES_DIR}/claim-database-WILL-FAIL.yaml"
+
+if [[ -f "${GOOD_CLAIM}" && -f "${BAD_CLAIM}" ]]; then
+    CLAIM_CHECKS=$(GOOD="${GOOD_CLAIM}" BAD="${BAD_CLAIM}" python3 << 'PYEOF'
 import yaml, json, os
 
 with open(os.environ["GOOD"]) as f:
@@ -71,51 +85,14 @@ r["bad_size"] = bad.get("spec", {}).get("size") == "large"
 
 print(json.dumps(r))
 PYEOF
-)
+    )
 
-assert "Working claim apiVersion correct" "$(echo "${CLAIM_CHECKS}" | python3 -c "import sys,json; print(json.load(sys.stdin)['good_api'])")"
-assert "Working claim kind correct" "$(echo "${CLAIM_CHECKS}" | python3 -c "import sys,json; print(json.load(sys.stdin)['good_kind'])")"
-assert "Working claim: checkout/eu-west-1/small" "$(echo "${CLAIM_CHECKS}" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['good_team'] and d['good_region'] and d['good_size'])")"
-assert "Failing claim: checkout/us-west-2/large" "$(echo "${CLAIM_CHECKS}" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['bad_team'] and d['bad_region'] and d['bad_size'])")"
-
-echo ""
-echo "--- OPA policy integration ---"
-
-if [[ ! -d "${POLICY_DIR}" ]]; then
-    echo -e "  ${RED}SKIP${NC} — policies/opa not found"
+    assert "Working claim apiVersion correct" "$(echo "${CLAIM_CHECKS}" | python3 -c "import sys,json; print(json.load(sys.stdin)['good_api'])")"
+    assert "Working claim kind correct" "$(echo "${CLAIM_CHECKS}" | python3 -c "import sys,json; print(json.load(sys.stdin)['good_kind'])")"
+    assert "Working claim: checkout/eu-west-1/small" "$(echo "${CLAIM_CHECKS}" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['good_team'] and d['good_region'] and d['good_size'])")"
+    assert "Failing claim: checkout/us-west-2/large" "$(echo "${CLAIM_CHECKS}" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['bad_team'] and d['bad_region'] and d['bad_size'])")"
 else
-    # Test working claim against both policies
-    GOOD_INPUT=$(CLAIM="${GOOD_CLAIM}" python3 -c "
-import yaml, json, os
-with open(os.environ['CLAIM']) as f:
-    c = yaml.safe_load(f)
-print(json.dumps({'review': {'object': c}}))
-")
-
-    REGION_RESULT=$(echo "${GOOD_INPUT}" | opa eval -d "${POLICY_DIR}/region-allowed.rego" -I 'data.platform.region.deny' --format raw 2>&1)
-    assert "Working claim passes region policy (0 denials)" "$([[ "${REGION_RESULT}" == "[]" ]] && echo true || echo false)"
-
-    SIZE_RESULT=$(echo "${GOOD_INPUT}" | opa eval -d "${POLICY_DIR}/size-limits.rego" -I 'data.platform.size.deny' --format raw 2>&1)
-    assert "Working claim passes size policy (0 denials)" "$([[ "${SIZE_RESULT}" == "[]" ]] && echo true || echo false)"
-
-    # Test failing claim — should produce exactly 2 violations (region + size)
-    BAD_INPUT=$(CLAIM="${BAD_CLAIM}" python3 -c "
-import yaml, json, os
-with open(os.environ['CLAIM']) as f:
-    c = yaml.safe_load(f)
-print(json.dumps({'review': {'object': c}}))
-")
-
-    REGION_DENY=$(echo "${BAD_INPUT}" | opa eval -d "${POLICY_DIR}/region-allowed.rego" -I 'data.platform.region.deny' --format json 2>&1)
-    REGION_COUNT=$(echo "${REGION_DENY}" | python3 -c "import sys,json; r=json.load(sys.stdin); print(len(r.get('result',[{}])[0].get('expressions',[{}])[0].get('value',[])))")
-    assert "Failing claim triggers 1 region denial" "$([[ "${REGION_COUNT}" == "1" ]] && echo true || echo false)"
-
-    SIZE_DENY=$(echo "${BAD_INPUT}" | opa eval -d "${POLICY_DIR}/size-limits.rego" -I 'data.platform.size.deny' --format json 2>&1)
-    SIZE_COUNT=$(echo "${SIZE_DENY}" | python3 -c "import sys,json; r=json.load(sys.stdin); print(len(r.get('result',[{}])[0].get('expressions',[{}])[0].get('value',[])))")
-    assert "Failing claim triggers 1 size denial" "$([[ "${SIZE_COUNT}" == "1" ]] && echo true || echo false)"
-
-    TOTAL_VIOLATIONS=$((REGION_COUNT + SIZE_COUNT))
-    assert "Failing claim has exactly 2 total violations" "$([[ "${TOTAL_VIOLATIONS}" == "2" ]] && echo true || echo false)"
+    assert "Core claims exist for content checks" "false"
 fi
 
 echo ""

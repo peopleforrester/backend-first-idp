@@ -1,10 +1,12 @@
-# ABOUTME: Build and test targets for the backend-first IDP repo.
+# ABOUTME: Build and test targets for the backend-first IDP v2 repo.
 # ABOUTME: Primary entry point: 'make test' runs all validation suites.
 
-.PHONY: test test-yaml test-shell test-opa test-structure test-xrd test-compositions test-golden-path lint clean
+.PHONY: test test-yaml test-shell test-kyverno test-xrd test-compositions \
+        test-golden-path test-structure test-observability test-eso test-scale \
+        lint validate clean
 
 # Run all tests
-test: test-yaml test-shell test-opa test-xrd test-compositions test-golden-path test-structure
+test: test-yaml test-shell test-kyverno test-xrd test-compositions test-golden-path test-observability test-eso test-scale test-structure
 
 # Individual test suites
 test-yaml:
@@ -13,8 +15,8 @@ test-yaml:
 test-shell:
 	@bash tests/shellcheck_test.sh
 
-test-opa:
-	@bash tests/opa_test.sh
+test-kyverno:
+	@bash tests/kyverno_test.sh
 
 test-xrd:
 	@bash tests/xrd_test.sh
@@ -24,6 +26,15 @@ test-compositions:
 
 test-golden-path:
 	@bash tests/golden_path_test.sh
+
+test-observability:
+	@bash tests/observability_test.sh
+
+test-eso:
+	@bash tests/eso_test.sh
+
+test-scale:
+	@bash tests/scale_test.sh
 
 test-structure:
 	@bash tests/structure_test.sh
