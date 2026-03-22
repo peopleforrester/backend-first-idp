@@ -1,8 +1,8 @@
-# ABOUTME: ArgoCD ApplicationSets for platform components and team claims.
-# ABOUTME: Cluster generator for infra, git generator for team self-service claims.
+# ABOUTME: ArgoCD v3 ApplicationSets — platform components, policies, teams, observability.
+# ABOUTME: 4 ApplicationSets covering the full platform delivery pipeline.
 
-# --- Platform Components ApplicationSet ---
-# Deploys XRDs, compositions, and policies per cluster based on provider label.
+# --- 1. Platform Components ApplicationSet ---
+# Deploys XRDs and cloud-specific compositions per cluster based on provider label.
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
@@ -24,6 +24,9 @@ spec:
   template:
     metadata:
       name: "platform-{{.name}}"
+      labels:
+        app.kubernetes.io/part-of: platform
+        platform.kubecon.io/component: infrastructure
     spec:
       project: platform
       source:
@@ -40,9 +43,60 @@ spec:
         syncOptions:
           - CreateNamespace=true
           - ServerSideApply=true
+          - RespectIgnoreDifferences=true
+        retry:
+          limit: 3
+          backoff:
+            duration: 30s
+            factor: 2
+            maxDuration: 5m
 ---
-# --- Team Claims ApplicationSet ---
-# Scans for team database claims committed to the repo via GitOps.
+# --- 2. Policy Promotion ApplicationSet ---
+# Deploys Kyverno policies per cluster based on environment label.
+# dev clusters get Audit mode, staging gets mixed, production gets Enforce.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: platform-policies
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - clusters:
+        selector:
+          matchExpressions:
+            - key: environment
+              operator: In
+              values:
+                - dev
+                - staging
+                - production
+  template:
+    metadata:
+      name: "policies-{{.name}}"
+      labels:
+        app.kubernetes.io/part-of: platform
+        platform.kubecon.io/component: policies
+    spec:
+      project: platform
+      source:
+        repoURL: https://github.com/peopleforrester/backend-first-idp.git
+        targetRevision: main
+        path: "policies/kyverno/promotion/{{.metadata.labels.environment}}"
+      destination:
+        server: "{{.server}}"
+        namespace: kyverno
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - ServerSideApply=true
+---
+# --- 3. Team Claims ApplicationSet ---
+# Scans for team claims committed to the repo via GitOps.
+# Each team's claims/ directory becomes an ArgoCD Application.
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
@@ -59,7 +113,11 @@ spec:
           - path: "teams/*/claims"
   template:
     metadata:
-      name: "claims-{{.path.basename}}"
+      name: "claims-{{index .path.segments 1}}"
+      labels:
+        app.kubernetes.io/part-of: teams
+        platform.kubecon.io/component: claims
+        team: "{{index .path.segments 1}}"
     spec:
       project: teams
       source:
@@ -68,10 +126,54 @@ spec:
         path: "{{.path.path}}"
       destination:
         server: https://kubernetes.default.svc
-        namespace: "{{.path[1]}}"
+        namespace: "{{index .path.segments 1}}"
       syncPolicy:
         automated:
           prune: true
           selfHeal: true
         syncOptions:
           - CreateNamespace=true
+---
+# --- 4. Observability Stack ApplicationSet ---
+# Deploys OTel collectors, Prometheus rules, and ServiceMonitors.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: platform-observability
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - clusters:
+        selector:
+          matchLabels:
+            platform.kubecon.io/observability: "true"
+  template:
+    metadata:
+      name: "observability-{{.name}}"
+      labels:
+        app.kubernetes.io/part-of: platform
+        platform.kubecon.io/component: observability
+    spec:
+      project: platform
+      sources:
+        - repoURL: https://github.com/peopleforrester/backend-first-idp.git
+          targetRevision: main
+          path: observability/opentelemetry
+        - repoURL: https://github.com/peopleforrester/backend-first-idp.git
+          targetRevision: main
+          path: observability/prometheus/platform-rules
+        - repoURL: https://github.com/peopleforrester/backend-first-idp.git
+          targetRevision: main
+          path: observability/prometheus/service-monitors
+      destination:
+        server: "{{.server}}"
+        namespace: observability
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - ServerSideApply=true

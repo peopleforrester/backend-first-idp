@@ -10,7 +10,7 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 # Defaults
 PROVIDER=""
 CROSSPLANE_VERSION="1.17"
-ARGOCD_VERSION="v2.13.3"
+ARGOCD_VERSION="v3.3.4"
 GATEKEEPER_VERSION="3.18"
 
 usage() {
@@ -113,9 +113,10 @@ echo ""
 # --- Step 4: Install ArgoCD ---
 echo "=== Step 4/6: Installing ArgoCD ${ARGOCD_VERSION} ==="
 kubectl create namespace argocd 2>/dev/null || true
-kubectl apply -n argocd \
+# ArgoCD v3 requires server-side apply due to CRD size exceeding annotation limits
+kubectl apply -n argocd --server-side --force-conflicts \
     -f "https://raw.githubusercontent.com/argoproj/argo-cd/${ARGOCD_VERSION}/manifests/install.yaml"
-echo "  ArgoCD installed."
+echo "  ArgoCD v3 installed (server-side apply)."
 echo ""
 
 # --- Step 5: Install Gatekeeper ---

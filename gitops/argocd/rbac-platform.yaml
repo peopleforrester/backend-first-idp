@@ -1,0 +1,85 @@
+# ABOUTME: ArgoCD v3 RBAC — platform team gets full access, teams see only their claims.
+# ABOUTME: Fine-grained RBAC required in v3 (no longer inherits to sub-resources).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-rbac-cm
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: argocd
+    platform.kubecon.io/managed: "true"
+data:
+  # ArgoCD v3 RBAC policy
+  # Platform team: full access to all projects and applications
+  # Individual teams: read-only on their own claims, no access to platform infra
+  policy.csv: |
+    # Platform team — full access
+    p, role:platform-admin, applications, *, platform/*, allow
+    p, role:platform-admin, applications, *, teams/*, allow
+    p, role:platform-admin, clusters, *, *, allow
+    p, role:platform-admin, repositories, *, *, allow
+    p, role:platform-admin, logs, get, platform/*, allow
+    p, role:platform-admin, logs, get, teams/*, allow
+    p, role:platform-admin, exec, create, platform/*, allow
+
+    # Team role template — each team gets read + sync on their claims only
+    p, role:team-checkout, applications, get, teams/claims-checkout, allow
+    p, role:team-checkout, applications, sync, teams/claims-checkout, allow
+    p, role:team-checkout, logs, get, teams/claims-checkout, allow
+
+    p, role:team-payments, applications, get, teams/claims-payments, allow
+    p, role:team-payments, applications, sync, teams/claims-payments, allow
+    p, role:team-payments, logs, get, teams/claims-payments, allow
+
+    p, role:team-analytics, applications, get, teams/claims-analytics, allow
+    p, role:team-analytics, applications, sync, teams/claims-analytics, allow
+    p, role:team-analytics, logs, get, teams/claims-analytics, allow
+
+    p, role:team-identity, applications, get, teams/claims-identity, allow
+    p, role:team-identity, applications, sync, teams/claims-identity, allow
+    p, role:team-identity, logs, get, teams/claims-identity, allow
+
+    p, role:team-catalog, applications, get, teams/claims-catalog, allow
+    p, role:team-catalog, applications, sync, teams/claims-catalog, allow
+    p, role:team-catalog, logs, get, teams/claims-catalog, allow
+
+    p, role:team-shipping, applications, get, teams/claims-shipping, allow
+    p, role:team-shipping, applications, sync, teams/claims-shipping, allow
+    p, role:team-shipping, logs, get, teams/claims-shipping, allow
+
+    p, role:team-notifications, applications, get, teams/claims-notifications, allow
+    p, role:team-notifications, applications, sync, teams/claims-notifications, allow
+    p, role:team-notifications, logs, get, teams/claims-notifications, allow
+
+    p, role:team-inventory, applications, get, teams/claims-inventory, allow
+    p, role:team-inventory, applications, sync, teams/claims-inventory, allow
+    p, role:team-inventory, logs, get, teams/claims-inventory, allow
+
+    p, role:team-search, applications, get, teams/claims-search, allow
+    p, role:team-search, applications, sync, teams/claims-search, allow
+    p, role:team-search, logs, get, teams/claims-search, allow
+
+    p, role:team-billing, applications, get, teams/claims-billing, allow
+    p, role:team-billing, applications, sync, teams/claims-billing, allow
+    p, role:team-billing, logs, get, teams/claims-billing, allow
+
+    p, role:team-marketing, applications, get, teams/claims-marketing, allow
+    p, role:team-marketing, applications, sync, teams/claims-marketing, allow
+    p, role:team-marketing, logs, get, teams/claims-marketing, allow
+
+    # Group bindings (map SSO groups to ArgoCD roles)
+    g, platform-team, role:platform-admin
+    g, checkout-team, role:team-checkout
+    g, payments-team, role:team-payments
+    g, analytics-team, role:team-analytics
+    g, identity-team, role:team-identity
+    g, catalog-team, role:team-catalog
+    g, shipping-team, role:team-shipping
+    g, notifications-team, role:team-notifications
+    g, inventory-team, role:team-inventory
+    g, search-team, role:team-search
+    g, billing-team, role:team-billing
+    g, marketing-team, role:team-marketing
+
+  # Default policy: deny everything not explicitly granted
+  policy.default: role:none
