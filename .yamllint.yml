@@ -1,0 +1,19 @@
+# ABOUTME: Yamllint configuration for the backend-first IDP repo.
+# ABOUTME: Allows long lines for Crossplane compositions and relaxes comment spacing.
+---
+extends: default
+
+rules:
+  line-length:
+    max: 200
+    allow-non-breakable-words: true
+    allow-non-breakable-inline-mappings: true
+  comments:
+    min-spaces-from-content: 1
+  truthy:
+    allowed-values: ['true', 'false', 'yes', 'no']
+    check-keys: false
+  document-start: disable
+  indentation:
+    spaces: 2
+    indent-sequences: consistent
