@@ -1,10 +1,11 @@
-# Architecture: Backend-First Internal Developer Platform
+# Architecture: Backend-First Internal Developer Platform (v2)
 
 ## Overview
 
-This reference architecture implements a backend-first IDP using Crossplane,
-ArgoCD, and OPA/Gatekeeper. The thesis: build automation, guardrails, and
-GitOps pipelines first. The portal is optional.
+This reference architecture implements a backend-first IDP using Crossplane v2,
+ArgoCD v3, Kyverno, External Secrets Operator, and a full observability stack.
+The thesis: build automation, guardrails, and GitOps pipelines first. The portal
+is optional.
 
 ## Architecture Diagram
 
@@ -13,140 +14,122 @@ GitOps pipelines first. The portal is optional.
                           │      Developer Interface     │
                           │                              │
                           │   9-line YAML claim          │
-                          │   (DatabaseInstanceClaim)    │
+                          │   (7 resource types)         │
                           └──────────────┬───────────────┘
                                          │ git push
                                          ▼
                           ┌──────────────────────────────┐
                           │          GitOps Layer         │
                           │                              │
-                          │  ArgoCD ApplicationSets      │
+                          │  ArgoCD v3 ApplicationSets   │
                           │  ├─ Platform components      │
-                          │  │  (cluster generator)      │
-                          │  └─ Team claims              │
-                          │     (git generator)          │
+                          │  ├─ Policy promotion         │
+                          │  ├─ Team claims (12 teams)   │
+                          │  └─ Observability stack      │
                           └──────────────┬───────────────┘
                                          │ sync
                                          ▼
                 ┌────────────────────────────────────────────────┐
                 │              Admission Control                 │
                 │                                                │
-                │  Gatekeeper ConstraintTemplate                 │
-                │  ├─ Region enforcement (PCI compliance)        │
-                │  └─ Size caps (cost control)                   │
+                │  Kyverno 1.17 CEL Policies (6 rules)          │
+                │  ├─ Region enforcement (PCI-DSS)               │
+                │  ├─ Size caps (cost control)                   │
+                │  ├─ Required labels (governance)               │
+                │  ├─ Naming conventions (inventory)             │
+                │  ├─ Backup retention (reliability)             │
+                │  └─ HA enforcement (production safety)         │
                 │                                                │
-                │  ┌──────────────────────────────────────────┐  │
-                │  │         THE SEMANTIC GAP                 │  │
-                │  │  Policies validate what is ALLOWED,      │  │
-                │  │  not what makes SENSE for the workload.  │  │
-                │  │  → Shadow Metrics close this gap.        │  │
-                │  └──────────────────────────────────────────┘  │
+                │  Policy Promotion: dev → staging → production  │
                 └────────────────────┬───────────────────────────┘
                                      │ admitted
                                      ▼
                           ┌──────────────────────────────┐
                           │        Platform API          │
                           │                              │
-                          │  CompositeResourceDefinition │
-                          │  (DatabaseInstance XRD)       │
-                          │                              │
-                          │  Fields: size, region, team,  │
-                          │  engine, HA, backup retention │
+                          │  7 CompositeResourceDefs     │
+                          │  ├─ DatabaseInstance          │
+                          │  ├─ CacheInstance             │
+                          │  ├─ MessageQueue              │
+                          │  ├─ ObjectStorage             │
+                          │  ├─ CDNDistribution           │
+                          │  ├─ DNSRecord                 │
+                          │  └─ KubernetesNamespace       │
                           └──────────────┬───────────────┘
                                          │ compose
                     ┌────────────────────┼────────────────────┐
                     ▼                    ▼                    ▼
          ┌──────────────────┐ ┌──────────────────┐ ┌──────────────────┐
-         │   AWS Composition │ │  GCP Composition  │ │ Azure Composition │
+         │  AWS (7 comps)   │ │  GCP (7 comps)   │ │ Azure (7 comps)  │
          │                  │ │                   │ │                  │
-         │ • RDS Instance   │ │ • Cloud SQL       │ │ • FlexibleServer │
-         │ • IAM Role       │ │ • Database        │ │ • FlexibleServer │
-         │ • SecurityGroup  │ │ • User            │ │   Database       │
-         │ • SG Rule        │ │                   │ │                  │
-         │                  │ │  Region mapping:  │ │  Region mapping: │
-         │  Direct region   │ │  eu-west-1 →      │ │  eu-west-1 →     │
-         │  passthrough     │ │  europe-west1     │ │  westeurope      │
+         │ RDS, ElastiCache │ │ Cloud SQL,        │ │ FlexibleServer,  │
+         │ SQS, S3,         │ │ Memorystore,      │ │ Redis Cache,     │
+         │ CloudFront,      │ │ Pub/Sub, GCS,     │ │ Service Bus,     │
+         │ Route53, NS+RBAC │ │ CDN, DNS, NS+RBAC │ │ Blob, FD, NS    │
          └────────┬─────────┘ └────────┬──────────┘ └────────┬─────────┘
                   │                    │                     │
                   ▼                    ▼                     ▼
          ┌──────────────────────────────────────────────────────────────┐
          │                    Cloud Provider APIs                       │
-         │         (via Upbound Crossplane Providers)                   │
          └──────────────────────────────────────────────────────────────┘
+
+                    ┌────────────────────────────────────────┐
+                    │         Runtime Validation              │
+                    │                                        │
+                    │  Shadow Metrics (4 rules)              │
+                    │  ├─ Database sizing vs traffic          │
+                    │  ├─ Region latency vs users             │
+                    │  ├─ Cost efficiency vs utilization      │
+                    │  └─ HA requirement vs SLO               │
+                    │                                        │
+                    │  Composition Drift Detection            │
+                    │  └─ CronJob → Prometheus → Alert        │
+                    └────────────────────────────────────────┘
+
+                    ┌────────────────────────────────────────┐
+                    │         Observability                   │
+                    │                                        │
+                    │  OpenTelemetry (agent + gateway)        │
+                    │  Prometheus (rules + ServiceMonitors)   │
+                    │  OpenCost (team cost allocation)        │
+                    │  Grafana (5 dashboards)                 │
+                    │  External Secrets (3 cloud stores)      │
+                    └────────────────────────────────────────┘
 ```
 
-## Component Responsibilities
+## Component Versions
 
-### Crossplane XRDs (Platform API)
-
-The `CompositeResourceDefinition` is the API contract between platform
-engineers and application developers. It abstracts cloud-specific details
-behind a uniform interface.
-
-- **Inputs:** size, region, team, engine, highAvailability, backupRetentionDays
-- **Outputs:** connectionSecret, endpoint, port, status
-- **Claims:** Developers submit `DatabaseInstanceClaim` resources
-
-### Compositions (Cloud Adapters)
-
-Each composition maps the same XRD to cloud-native resources. Pipeline
-mode with `function-patch-and-transform` handles field mapping, including
-region translation for GCP and Azure.
-
-| Cloud | Resources Created | Authentication |
-|-------|-------------------|----------------|
-| AWS | RDS, IAM Role, SecurityGroup, SG Rule | IRSA |
-| GCP | Cloud SQL Instance, Database, User | Workload Identity |
-| Azure | FlexibleServer, FlexibleServerDatabase | OIDC |
-
-### OPA/Gatekeeper (Guardrails)
-
-Admission-time validation before resources are created:
-
-- **Region policy:** Team-to-region mapping enforcing data residency
-  (checkout/payments EU-only for PCI-DSS)
-- **Size policy:** Per-team size caps preventing cost overruns
-
-### ArgoCD (GitOps Delivery)
-
-Two ApplicationSets handle deployment:
-
-1. **Platform components:** Cluster generator deploys XRDs, compositions,
-   and policies to clusters based on their `provider` label
-2. **Team claims:** Git generator watches `teams/*/claims` directories
-   for self-service database requests
-
-### Bootstrap Script
-
-Single entry point for platform setup:
-
-```bash
-./bootstrap/install.sh --provider aws
-```
-
-Installs Crossplane, cloud provider, ArgoCD, Gatekeeper, and applies
-all platform resources.
-
-## The Semantic Gap
-
-The architecture enforces what is _allowed_ but cannot determine what is
-_correct_ for a given workload. A valid claim (small/eu-west-1/checkout)
-may be wrong if:
-
-- Traffic exceeds small instance capacity
-- Users are geographically distant from eu-west-1
-- Latency SLOs require a different configuration
-
-This gap between policy compliance and workload fitness is addressed by
-Shadow Metrics — runtime observability data that evaluates whether
-valid configurations are actually appropriate.
+| Component | Version | Role |
+|-----------|---------|------|
+| Crossplane | v2.1.0 | Resource abstraction and cloud provisioning |
+| ArgoCD | v3.3.4 | GitOps delivery (4 ApplicationSets) |
+| Kyverno | 1.17.1 | Admission control (6 CEL policies) |
+| ESO | v2.0.1 | Secrets management (3 cloud stores) |
+| OTel Operator | latest | Telemetry collection (agent + gateway) |
+| Prometheus | kube-prometheus-stack | Metrics, alerting, recording rules |
+| OpenCost | latest | Cost allocation by team label |
 
 ## Data Flow
 
-1. Developer commits a `DatabaseInstanceClaim` YAML
-2. ArgoCD syncs the claim to the target cluster
-3. Gatekeeper validates against OPA policies (region + size)
-4. Crossplane reconciles the claim against the XRD
-5. The matched Composition provisions cloud-native resources
-6. Connection details are written to a Kubernetes Secret
-7. The developer's application connects via the Secret
+1. Developer commits a claim YAML to `teams/{team}/claims/`
+2. ArgoCD team-claims ApplicationSet detects the change and syncs
+3. Kyverno evaluates the claim against 6 cluster policies
+4. If rejected: instant feedback with violation message
+5. If accepted: Crossplane reconciles against the matching XRD
+6. The matched Composition provisions cloud-native resources
+7. Shadow Metrics evaluate the claim against runtime Prometheus data
+8. Connection details written to a Kubernetes Secret (via ESO)
+9. Drift detection CronJob continuously verifies composition integrity
+10. Grafana dashboards surface health, latency, cost, and shadow metric alerts
+
+## Scale
+
+- 7 resource types (XRDs)
+- 21 compositions (7 × 3 clouds)
+- 12 teams
+- 109 claims
+- 6 admission policies
+- 4 shadow metric rules
+- 5 Grafana dashboards
+- 3 PrometheusRules (9 alert rules total)
+- 3 ServiceMonitors

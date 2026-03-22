@@ -2,15 +2,16 @@
 
 **Talk:** Architecting a Production-Ready IDP: Argo CD, Crossplane & OPA in Practice
 **Event:** KubeCon EU 2026 — Platform Engineering Zero Day
-**Duration:** ~8 minutes across 5 beats
+**Duration:** ~10 minutes across 6 beats
 
 ---
 
 ## Setup Before Going On Stage
 
 - Terminal open to repo root
-- Editor with files pre-loaded in tabs (claim, XRD, compositions, OPA, bootstrap)
+- Editor with files pre-loaded in tabs (claim, XRD, compositions, Kyverno, shadow metrics, bootstrap)
 - Font size: 24pt minimum for audience readability
+- Grafana dashboards loaded if live cluster available
 
 ---
 
@@ -37,9 +38,16 @@ spec:
   team: checkout
 ```
 
-> Pause. Let it sink in. The simplicity is the point.
+> Pause. Let it sink in.
 
-**Transition:** "But nine lines only works if something behind them
+"But this isn't just databases. We have seven resource types."
+
+> Quickly show `golden-path/examples/claim-full-service.yaml`
+
+"Database, cache, message queue, object storage — about thirty lines
+for a complete service. Still no portal."
+
+**Transition:** "Nine lines only works if something behind them
 is doing the heavy lifting. Let me show you what's behind the curtain."
 
 ---
@@ -51,130 +59,169 @@ is doing the heavy lifting. Let me show you what's behind the curtain."
 > Scroll to the spec fields.
 
 "This is a Crossplane CompositeResourceDefinition — the platform's API
-contract. It defines what developers CAN ask for: size, region, team,
-engine, high availability, backup retention."
+contract. Seven of these cover every resource type our teams need:
+databases, caches, queues, storage, CDN, DNS, and namespaces."
 
-> Point out the enums.
+> Point out the enums and defaults.
 
-"Notice the constraints are baked into the schema. You can't request a
-region we don't operate in. You can't ask for an engine we don't support.
-The API itself is the first layer of guardrails."
+"The constraints are baked into the schema. You can't request a region
+we don't operate in. You can't use an engine we don't support. The API
+itself is the first layer of guardrails."
 
-**Transition:** "But an API contract is just a schema. The real question
-is: what happens when someone submits that claim?"
+**Transition:** "But an API contract is just a schema. What happens when
+someone submits that claim?"
 
 ---
 
 ## Beat 3: Three Clouds, One Claim (~2 min)
 
-**Files:** Side-by-side if possible, or tab through:
+**Files:** Tab through:
 - `platform-api/compositions/aws/database-small.yaml`
 - `platform-api/compositions/gcp/database-small.yaml`
 - `platform-api/compositions/azure/database-small.yaml`
 
-"Same claim. Three completely different cloud implementations."
+"Same claim. Three completely different cloud implementations.
+Twenty-one compositions total — seven resource types across three clouds."
 
 > Show AWS composition briefly — highlight RDS, IAM, SecurityGroup.
 
 "On AWS, that nine-line claim becomes an RDS instance with encryption,
-performance insights, an IAM role for monitoring, and a security group
-with the right ingress rules."
+performance insights, an IAM role for monitoring, and a security group."
 
 > Switch to GCP.
 
-"On GCP, same claim, but now it's Cloud SQL with query insights, PD_SSD
-storage, and automatic region mapping. eu-west-1 becomes europe-west1."
+"On GCP, same claim, but now it's Cloud SQL with query insights
+and automatic region mapping. eu-west-1 becomes europe-west1."
 
 > Switch to Azure.
 
-"Azure: FlexibleServer with auto-grow storage. Same developer experience,
-completely different infrastructure."
+"Azure: FlexibleServer. Same developer experience, completely different
+infrastructure. The developer never sees any of this."
 
-**Transition:** "So the platform handles the complexity. But who decides
-what's ALLOWED?"
+**Transition:** "The platform handles complexity. But who decides what's allowed?"
 
 ---
 
-## Beat 4: The Guardrails — and the Gap (~2 min)
+## Beat 4: Kyverno Guardrails → The Semantic Gap (~2.5 min)
 
 **Files:**
-- `policies/opa/region-allowed.rego`
-- `policies/opa/size-limits.rego`
+- `policies/kyverno/cluster-policies/region-enforcement.yaml`
+- `policies/kyverno/cluster-policies/size-caps.yaml`
 
-> Show the region policy first.
+> Show the region policy.
 
-"OPA policies. The checkout and payments teams can only deploy in EU
-regions — PCI compliance. Analytics gets US and EU. The platform team
-gets everything."
+"Six Kyverno policies. The checkout and payments teams can only deploy in
+EU regions — PCI compliance. Analytics gets US and EU. Platform team gets
+everything. These are CEL expressions, the same language Kubernetes itself
+uses for validation."
 
-> Show the size limits.
+> Show the size-caps policy.
 
-"Size caps per team. Checkout is capped at medium. Payments can go to
-large. This prevents cost surprises."
+"Size caps per team. Checkout capped at medium. Payments can go to large."
 
-> Now scroll to the SEMANTIC GAP COMMENT at the bottom of size-limits.rego.
-> READ IT ALOUD. This is the pivot moment.
+> Show the failing claim demo.
 
-"But here's the thing..."
+"Watch what happens when someone breaks the rules."
 
-> Read the comment block slowly, with emphasis:
+```bash
+kyverno apply policies/kyverno/cluster-policies/ \
+  --resource golden-path/examples/claim-database-WILL-FAIL.yaml
+```
 
-"Everything above validates what is ALLOWED. It does not validate what
-makes SENSE. A request for small, eu-west-1, checkout will pass every
-policy. OPA says yes. But is it RIGHT? Is small enough for Black Friday?
-Is eu-west-1 where the users actually are? Will the latency meet the SLO?"
+"Three violations. Instant feedback. No ticket required."
+
+> Now scroll to the SEMANTIC GAP ANNOTATION on size-caps.yaml. Read it.
+
+"But here's the thing... Everything above validates what is ALLOWED.
+It does not validate what makes SENSE."
 
 > Pause.
 
-"OPA can't answer those questions. Neither can Crossplane. To answer them,
-you need runtime data. Prometheus. SLO dashboards. FinOps tooling."
+"A request for small, eu-west-1, checkout passes every policy.
+Kyverno says yes. But is small enough for Black Friday traffic?
+Is eu-west-1 where the users actually are?"
 
-"This is the semantic gap. Policies enforce boundaries. But most production
-incidents happen INSIDE those boundaries — with perfectly valid configurations
-that are wrong for the workload."
-
-**Transition:** "This is where Shadow Metrics come in."
-
-> [ADVANCE TO SLIDE: "Shadow Metrics — Closing the Semantic Gap"]
+"This is the semantic gap. And this is where Shadow Metrics come in."
 
 ---
 
-## Beat 5: One Command (~1 min)
+## Beat 5: Shadow Metrics (~2 min)
 
-**File:** `bootstrap/install.sh`
+**Files:**
+- `platform-api/shadow-metrics/README.md`
+- `platform-api/shadow-metrics/rules/database-sizing.yaml`
+- Grafana: `observability/grafana/dashboards/shadow-metrics.json`
 
-> Show the script structure. Don't run it live.
+> Show the ShadowMetricRule CRD.
 
-"One command. Pick your cloud. It installs Crossplane, the provider,
-ArgoCD, Gatekeeper, and applies everything you just saw."
+"A Shadow Metric is a runtime measurement. It evaluates whether a valid
+claim is correct for its workload. It doesn't block — it annotates."
+
+> Show the database-sizing rule.
+
+"This rule queries Prometheus for the actual request rate hitting the
+namespace. If checkout handles 50,000 requests a day and the database
+is sized small — the dashboard flags it."
+
+> Show the shadow metric warning claim.
+
+"This claim passes every Kyverno policy. But the Shadow Metrics
+dashboard says: WARNING — undersized for traffic."
+
+> If live cluster: show the Grafana shadow-metrics dashboard.
+> If not: show the JSON and explain what it would display.
+
+"Policies enforce the boundaries. Shadow Metrics tell you when
+you're inside the boundaries but still wrong."
+
+**Transition:** "So that's the full loop. Let me show you how it all deploys."
+
+---
+
+## Beat 6: One Command + Scale (~1.5 min)
+
+**Files:**
+- `bootstrap/install.sh`
+- `teams/` directory
+
+> Show the bootstrap script structure (don't run it live).
+
+"One command. Pick your cloud. Twelve steps: cert-manager, Crossplane v2,
+ArgoCD v3, Kyverno, External Secrets, the observability stack, and all
+the platform resources."
 
 ```bash
 ./bootstrap/install.sh --provider aws
 ```
 
-> Scroll through the steps briefly.
+> Show the teams directory.
 
-"Pre-flight checks. Helm installs. Provider configuration. Policy
-application. From zero to a working IDP backend in under ten minutes."
+"Twelve teams, a hundred and nine claims. Checkout, payments, analytics,
+identity, catalog, shipping, notifications, inventory, search, billing,
+marketing, and the platform team itself."
 
-**Transition to next section of the talk.**
+> Show the ArgoCD ApplicationSets.
+
+"Four ApplicationSets. One for platform infrastructure, one for policy
+promotion, one for team claims, one for observability. The teams directory
+is the ArgoCD git generator source — commit a claim, ArgoCD syncs it."
+
+> Close.
+
+"No portal. No tickets. No snowflake workflows. Git is the interface.
+The platform is the backend. Everything you've seen is in this repo."
 
 ---
 
-## Failing Claim Demo (Optional, if time permits)
+## Failing Claim Demo (if time permits)
 
 **File:** `golden-path/examples/claim-database-WILL-FAIL.yaml`
 
-> Show this claim — checkout requesting us-west-2 and large.
-
-"Watch what happens when someone tries to break the rules."
-
-> If cluster is live, `kubectl apply -f` and show the Gatekeeper rejection.
-> If not, explain the two violations:
-> 1. Region: checkout can't deploy in us-west-2
-> 2. Size: checkout is capped at medium, requested large
-
-"Two violations. Instant feedback. No ticket required."
+```bash
+# Three violations: region (PCI), size (cost), labels (governance)
+kyverno apply policies/kyverno/cluster-policies/ \
+  --resource golden-path/examples/claim-database-WILL-FAIL.yaml
+```
 
 ---
 
@@ -183,7 +230,8 @@ application. From zero to a working IDP backend in under ten minutes."
 | Beat | Slide Topic | Duration |
 |------|-------------|----------|
 | 1 | Golden Path / Developer Experience | ~1.5 min |
-| 2 | Platform API Contract (XRDs) | ~1.5 min |
-| 3 | Multi-Cloud Compositions | ~2 min |
-| 4 | OPA Guardrails → Semantic Gap Pivot | ~2 min |
-| 5 | Bootstrap / One Command Setup | ~1 min |
+| 2 | Platform API Contract (7 XRDs) | ~1.5 min |
+| 3 | Multi-Cloud Compositions (21 total) | ~2 min |
+| 4 | Kyverno Guardrails → Semantic Gap Pivot | ~2.5 min |
+| 5 | Shadow Metrics — Closing the Gap | ~2 min |
+| 6 | One Command + Scale (12 teams, 109 claims) | ~1.5 min |
