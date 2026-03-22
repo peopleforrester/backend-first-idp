@@ -66,7 +66,10 @@ htmlcov/
 *.key
 .env.local
 .env.*.local
-secrets/
+# Note: secrets/eso/ contains ESO manifest templates (not actual secrets)
+# and is tracked in git. The general secrets/ exclusion is overridden below.
+secrets/*
+!secrets/eso/
 
 # Build
 *.tfstate
