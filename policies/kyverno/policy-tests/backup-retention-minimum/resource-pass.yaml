@@ -1,0 +1,14 @@
+# ABOUTME: Test resource that should PASS backup retention — 7 days meets minimum.
+# ABOUTME: Production databases must have at least 7 day backup retention.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: DatabaseInstanceClaim
+metadata:
+  name: checkout-db-good-backup
+  namespace: checkout-prod
+  labels:
+    team: checkout
+spec:
+  size: small
+  region: eu-west-1
+  team: checkout
+  backupRetentionDays: 14

@@ -1,0 +1,86 @@
+# ABOUTME: Kyverno policy enforcing team-to-region constraints for platform claims.
+# ABOUTME: checkout/payments restricted to EU (PCI-DSS), analytics to US+EU, platform to all.
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: region-enforcement
+  annotations:
+    policies.kyverno.io/title: Team Region Enforcement
+    policies.kyverno.io/category: Platform Compliance
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/description: >-
+      Enforces team-to-region mapping for PCI-DSS compliance.
+      checkout and payments teams are restricted to EU regions only.
+      analytics gets EU + US. platform team gets all regions.
+spec:
+  validationFailureAction: Enforce
+  background: false
+  rules:
+    - name: checkout-eu-only
+      match:
+        any:
+          - resources:
+              kinds:
+                - DatabaseInstanceClaim
+                - CacheInstanceClaim
+                - MessageQueueClaim
+                - ObjectStorageClaim
+      preconditions:
+        all:
+          - key: "{{ request.object.spec.team }}"
+            operator: Equals
+            value: checkout
+      validate:
+        message: >-
+          Checkout team is restricted to EU regions for PCI-DSS compliance.
+          Requested region: {{ request.object.spec.region }}.
+          Allowed: eu-west-1, eu-central-1.
+        pattern:
+          spec:
+            region: "eu-west-1 | eu-central-1"
+
+    - name: payments-eu-only
+      match:
+        any:
+          - resources:
+              kinds:
+                - DatabaseInstanceClaim
+                - CacheInstanceClaim
+                - MessageQueueClaim
+                - ObjectStorageClaim
+      preconditions:
+        all:
+          - key: "{{ request.object.spec.team }}"
+            operator: Equals
+            value: payments
+      validate:
+        message: >-
+          Payments team is restricted to EU regions for PCI-DSS compliance.
+          Requested region: {{ request.object.spec.region }}.
+          Allowed: eu-west-1, eu-central-1.
+        pattern:
+          spec:
+            region: "eu-west-1 | eu-central-1"
+
+    - name: analytics-us-eu-only
+      match:
+        any:
+          - resources:
+              kinds:
+                - DatabaseInstanceClaim
+                - CacheInstanceClaim
+                - MessageQueueClaim
+                - ObjectStorageClaim
+      preconditions:
+        all:
+          - key: "{{ request.object.spec.team }}"
+            operator: Equals
+            value: analytics
+      validate:
+        message: >-
+          Analytics team is restricted to US and EU regions.
+          Requested region: {{ request.object.spec.region }}.
+          Allowed: eu-west-1, eu-central-1, us-east-1, us-west-2.
+        pattern:
+          spec:
+            region: "eu-west-1 | eu-central-1 | us-east-1 | us-west-2"

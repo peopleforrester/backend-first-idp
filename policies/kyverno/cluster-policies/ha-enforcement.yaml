@@ -1,0 +1,33 @@
+# ABOUTME: Kyverno policy enforcing HA for databases in production namespaces.
+# ABOUTME: Production namespaces (ending in -prod) require highAvailability=true.
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: ha-enforcement
+  annotations:
+    policies.kyverno.io/title: Production HA Enforcement
+    policies.kyverno.io/category: Platform Reliability
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/description: >-
+      Database claims in production namespaces (ending in -prod) must
+      have highAvailability set to true. Single-instance databases
+      are not acceptable for production workloads.
+spec:
+  validationFailureAction: Enforce
+  background: false
+  rules:
+    - name: prod-requires-ha
+      match:
+        any:
+          - resources:
+              kinds:
+                - DatabaseInstanceClaim
+              namespaces:
+                - "*-prod"
+      validate:
+        message: >-
+          Production databases must have highAvailability enabled.
+          Set spec.highAvailability to true for namespace {{ request.object.metadata.namespace }}.
+        pattern:
+          spec:
+            highAvailability: true

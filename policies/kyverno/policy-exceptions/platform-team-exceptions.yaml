@@ -1,0 +1,22 @@
+# ABOUTME: Policy exceptions for the platform team — bypasses size caps and naming rules.
+# ABOUTME: Platform team manages infrastructure and needs elevated permissions.
+apiVersion: kyverno.io/v2
+kind: PolicyException
+metadata:
+  name: platform-team-exceptions
+  namespace: kyverno
+spec:
+  exceptions:
+    - policyName: size-caps
+      ruleNames:
+        - checkout-max-medium
+        - analytics-max-medium
+    - policyName: naming-conventions
+      ruleNames:
+        - name-starts-with-team
+  match:
+    any:
+      - resources:
+          namespaces:
+            - platform
+            - platform-prod

@@ -1,0 +1,40 @@
+# ABOUTME: Kyverno policy enforcing claim naming convention — must start with team name.
+# ABOUTME: Prevents orphaned resources and enables automated inventory by team.
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: naming-conventions
+  annotations:
+    policies.kyverno.io/title: Claim Naming Convention
+    policies.kyverno.io/category: Platform Governance
+    policies.kyverno.io/severity: low
+    policies.kyverno.io/description: >-
+      Platform claim names must start with the owning team name followed
+      by a hyphen (e.g. checkout-db, payments-cache). This enables
+      automated inventory and prevents orphaned resources.
+spec:
+  validationFailureAction: Enforce
+  background: false
+  rules:
+    - name: name-starts-with-team
+      match:
+        any:
+          - resources:
+              kinds:
+                - DatabaseInstanceClaim
+                - CacheInstanceClaim
+                - MessageQueueClaim
+                - ObjectStorageClaim
+                - CDNDistributionClaim
+                - DNSRecordClaim
+      validate:
+        message: >-
+          Claim name '{{ request.object.metadata.name }}' must start with
+          the team name '{{ request.object.spec.team }}-'.
+          Example: {{ request.object.spec.team }}-db
+        deny:
+          conditions:
+            all:
+              - key: "{{ request.object.metadata.name }}"
+                operator: NotEquals
+                value: "{{ request.object.spec.team }}-*"

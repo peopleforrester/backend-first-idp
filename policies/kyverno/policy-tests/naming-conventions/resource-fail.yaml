@@ -1,0 +1,13 @@
+# ABOUTME: Test resource that should FAIL naming convention — doesn't start with team name.
+# ABOUTME: Name "my-database" doesn't match pattern {team}-{resource}.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: DatabaseInstanceClaim
+metadata:
+  name: my-database
+  namespace: checkout
+  labels:
+    team: checkout
+spec:
+  size: small
+  region: eu-west-1
+  team: checkout

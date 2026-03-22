@@ -1,0 +1,76 @@
+# ABOUTME: Kyverno policy enforcing per-team size caps for platform claims.
+# ABOUTME: checkout/analytics capped at medium, payments/platform at large.
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: size-caps
+  annotations:
+    policies.kyverno.io/title: Team Size Caps
+    policies.kyverno.io/category: Platform Cost Control
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/description: >-
+      Enforces per-team maximum instance sizes to prevent cost overruns.
+      checkout and analytics are capped at medium. payments and platform
+      can use up to large.
+    # =========================================================================
+    # THE SEMANTIC GAP
+    # =========================================================================
+    # This policy validates what is ALLOWED. It does not validate what makes
+    # SENSE. A request for size=small, region=eu-west-1, team=checkout will
+    # pass every policy. But is it RIGHT?
+    #
+    # - Is small enough for checkout's Black Friday traffic?
+    # - Is eu-west-1 where checkout's users actually are?
+    # - Will this database's latency meet the SLO?
+    #
+    # To answer these questions, you need RUNTIME DATA: request rates from
+    # Prometheus, latency percentiles from SLO dashboards, cost-per-query
+    # from FinOps tooling. This is the semantic gap — the space between
+    # "valid" and "correct." See docs/semantic-gap.md.
+    #
+    # This is where Shadow Metrics come in.
+    # [TRANSITION TO SLIDE: "Shadow Metrics — Closing the Semantic Gap"]
+    # =========================================================================
+spec:
+  validationFailureAction: Enforce
+  background: false
+  rules:
+    - name: checkout-max-medium
+      match:
+        any:
+          - resources:
+              kinds:
+                - DatabaseInstanceClaim
+                - CacheInstanceClaim
+      preconditions:
+        all:
+          - key: "{{ request.object.spec.team }}"
+            operator: Equals
+            value: checkout
+      validate:
+        message: >-
+          Checkout team is capped at 'medium' size.
+          Requested: {{ request.object.spec.size }}.
+        pattern:
+          spec:
+            size: "small | medium"
+
+    - name: analytics-max-medium
+      match:
+        any:
+          - resources:
+              kinds:
+                - DatabaseInstanceClaim
+                - CacheInstanceClaim
+      preconditions:
+        all:
+          - key: "{{ request.object.spec.team }}"
+            operator: Equals
+            value: analytics
+      validate:
+        message: >-
+          Analytics team is capped at 'medium' size.
+          Requested: {{ request.object.spec.size }}.
+        pattern:
+          spec:
+            size: "small | medium"

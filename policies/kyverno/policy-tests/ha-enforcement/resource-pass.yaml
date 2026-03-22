@@ -1,0 +1,14 @@
+# ABOUTME: Test resource that should PASS HA enforcement — HA enabled in prod namespace.
+# ABOUTME: Production namespaces (ending in -prod) require highAvailability=true.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: DatabaseInstanceClaim
+metadata:
+  name: checkout-db-ha
+  namespace: checkout-prod
+  labels:
+    team: checkout
+spec:
+  size: medium
+  region: eu-west-1
+  team: checkout
+  highAvailability: true

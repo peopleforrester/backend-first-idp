@@ -1,0 +1,36 @@
+# ABOUTME: Kyverno policy enforcing minimum backup retention for production databases.
+# ABOUTME: Production namespaces (ending in -prod) require at least 7 day backups.
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: backup-retention-minimum
+  annotations:
+    policies.kyverno.io/title: Backup Retention Minimum
+    policies.kyverno.io/category: Platform Reliability
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/description: >-
+      Database claims in production namespaces (ending in -prod) must
+      have at least 7 days of backup retention. This prevents data loss
+      from misconfigured backup policies.
+spec:
+  validationFailureAction: Enforce
+  background: false
+  rules:
+    - name: prod-backup-minimum-7-days
+      match:
+        any:
+          - resources:
+              kinds:
+                - DatabaseInstanceClaim
+              namespaces:
+                - "*-prod"
+      validate:
+        message: >-
+          Production databases must have at least 7 days of backup retention.
+          Current: {{ request.object.spec.backupRetentionDays }} days.
+        deny:
+          conditions:
+            any:
+              - key: "{{ request.object.spec.backupRetentionDays }}"
+                operator: LessThan
+                value: 7

@@ -1,0 +1,13 @@
+# ABOUTME: Test resource that should PASS size caps — checkout requesting small.
+# ABOUTME: checkout team is capped at medium, so small is allowed.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: DatabaseInstanceClaim
+metadata:
+  name: checkout-db-small
+  namespace: checkout
+  labels:
+    team: checkout
+spec:
+  size: small
+  region: eu-west-1
+  team: checkout

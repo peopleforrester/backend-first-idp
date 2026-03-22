@@ -1,0 +1,13 @@
+# ABOUTME: Test resource that should PASS required-labels — has team label.
+# ABOUTME: All platform claims must have a team label.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: DatabaseInstanceClaim
+metadata:
+  name: checkout-db-labeled
+  namespace: checkout
+  labels:
+    team: checkout
+spec:
+  size: small
+  region: eu-west-1
+  team: checkout

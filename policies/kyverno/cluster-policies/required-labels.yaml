@@ -1,0 +1,37 @@
+# ABOUTME: Kyverno policy requiring team label on all platform claims.
+# ABOUTME: Ensures cost allocation and ownership tracking for every resource.
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: required-labels
+  annotations:
+    policies.kyverno.io/title: Required Team Label
+    policies.kyverno.io/category: Platform Governance
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/description: >-
+      All platform resource claims must have a 'team' label in metadata.labels.
+      This ensures cost allocation tracking and ownership visibility.
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: require-team-label
+      match:
+        any:
+          - resources:
+              kinds:
+                - DatabaseInstanceClaim
+                - CacheInstanceClaim
+                - MessageQueueClaim
+                - ObjectStorageClaim
+                - CDNDistributionClaim
+                - DNSRecordClaim
+                - KubernetesNamespaceClaim
+      validate:
+        message: >-
+          All platform claims must have a 'team' label in metadata.labels.
+          Add: metadata.labels.team: <your-team-name>
+        pattern:
+          metadata:
+            labels:
+              team: "?*"
