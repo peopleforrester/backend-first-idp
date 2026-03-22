@@ -1,0 +1,16 @@
+# ABOUTME: Production environment overlay — all policies enforced, full observability.
+# ABOUTME: Applied to clusters labeled environment=production.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+  - ../../../../policies/kyverno/promotion/production
+  - ../../../../platform-api/shadow-metrics/shadow-metric-crd.yaml
+  - ../../../../platform-api/shadow-metrics/rules/database-sizing.yaml
+  - ../../../../platform-api/shadow-metrics/rules/region-latency.yaml
+  - ../../../../platform-api/shadow-metrics/rules/cost-efficiency.yaml
+  - ../../../../platform-api/shadow-metrics/rules/ha-requirement.yaml
+
+commonLabels:
+  environment: production

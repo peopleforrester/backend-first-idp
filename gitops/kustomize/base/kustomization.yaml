@@ -1,7 +1,14 @@
 # ABOUTME: Kustomize base — shared platform resources applied to all clusters.
-# ABOUTME: Includes XRDs; Kyverno policies managed separately via promotion pipeline.
+# ABOUTME: Includes all 7 XRDs; Kyverno policies managed via promotion pipeline.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
   - ../../../platform-api/xrds/database-instance.yaml
+  - ../../../platform-api/xrds/cache-instance.yaml
+  - ../../../platform-api/xrds/message-queue.yaml
+  - ../../../platform-api/xrds/object-storage.yaml
+  - ../../../platform-api/xrds/cdn-distribution.yaml
+  - ../../../platform-api/xrds/dns-record.yaml
+  - ../../../platform-api/xrds/kubernetes-namespace.yaml
+  - ../../../platform-api/shadow-metrics/shadow-metric-crd.yaml

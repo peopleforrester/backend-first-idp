@@ -1,4 +1,4 @@
-# ABOUTME: Azure kustomize overlay — base resources plus Azure-specific composition.
+# ABOUTME: Azure kustomize overlay — base resources plus all Azure compositions.
 # ABOUTME: Applied to clusters labeled provider=azure by the platform ApplicationSet.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
@@ -6,3 +6,9 @@ kind: Kustomization
 resources:
   - ../../base
   - ../../../../platform-api/compositions/azure/database-small.yaml
+  - ../../../../platform-api/compositions/azure/cache-small.yaml
+  - ../../../../platform-api/compositions/azure/message-queue-small.yaml
+  - ../../../../platform-api/compositions/azure/object-storage.yaml
+  - ../../../../platform-api/compositions/azure/cdn-distribution.yaml
+  - ../../../../platform-api/compositions/azure/dns-record.yaml
+  - ../../../../platform-api/compositions/azure/namespace.yaml

@@ -1,0 +1,11 @@
+# ABOUTME: Dev environment overlay — relaxed resource quotas and audit-only policies.
+# ABOUTME: Applied to clusters labeled environment=dev.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+  - ../../../../policies/kyverno/promotion/dev
+
+commonLabels:
+  environment: dev

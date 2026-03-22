@@ -1,0 +1,11 @@
+# ABOUTME: Staging environment overlay — critical policies enforced, others audited.
+# ABOUTME: Applied to clusters labeled environment=staging.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+  - ../../../../policies/kyverno/promotion/staging
+
+commonLabels:
+  environment: staging
