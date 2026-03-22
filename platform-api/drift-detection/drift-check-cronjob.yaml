@@ -1,0 +1,127 @@
+# ABOUTME: CronJob for composition drift detection — runs every 15 minutes.
+# ABOUTME: Compares live compositions against git-expected hashes, pushes metrics.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: composition-drift-check
+  namespace: crossplane-system
+  labels:
+    platform.kubecon.io/managed: "true"
+    app.kubernetes.io/component: drift-detection
+spec:
+  schedule: "*/15 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 5
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      activeDeadlineSeconds: 120
+      template:
+        metadata:
+          labels:
+            app: composition-drift-check
+            platform.kubecon.io/managed: "true"
+        spec:
+          serviceAccountName: drift-checker
+          restartPolicy: Never
+          containers:
+            - name: drift-check
+              image: bitnami/kubectl:latest
+              command:
+                - /bin/bash
+                - /scripts/check-drift.sh
+              env:
+                - name: NAMESPACE
+                  value: crossplane-system
+                - name: CONFIGMAP_NAME
+                  value: composition-hashes
+                - name: CONFIGMAP_NAMESPACE
+                  value: crossplane-system
+                - name: PUSHGATEWAY_URL
+                  value: http://prometheus-pushgateway.observability.svc.cluster.local:9091
+              volumeMounts:
+                - name: scripts
+                  mountPath: /scripts
+                  readOnly: true
+          volumes:
+            - name: scripts
+              configMap:
+                name: drift-check-script
+                defaultMode: 0755
+---
+# ConfigMap holding the drift check script
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: drift-check-script
+  namespace: crossplane-system
+  labels:
+    platform.kubecon.io/managed: "true"
+data:
+  check-drift.sh: |
+    #!/usr/bin/env bash
+    # Inline version of platform-api/drift-detection/scripts/check-drift.sh
+    # See the full script for documentation.
+    set -euo pipefail
+    echo "Composition drift check at $(date -u)"
+    DRIFT=0
+    TOTAL=0
+    for comp in $(kubectl get compositions -o jsonpath='{.items[*].metadata.name}'); do
+      ((TOTAL++)) || true
+      hash=$(kubectl get composition "$comp" -o yaml \
+        | grep -v 'resourceVersion\|uid\|creationTimestamp\|generation\|managedFields' \
+        | sha256sum | cut -d' ' -f1)
+      expected=$(kubectl get configmap composition-hashes -n crossplane-system \
+        -o jsonpath="{.data.$comp}" 2>/dev/null || echo "")
+      if [[ -n "$expected" && "$hash" != "$expected" ]]; then
+        echo "DRIFT: $comp (expected=$expected live=$hash)"
+        ((DRIFT++)) || true
+      fi
+    done
+    echo "Checked=$TOTAL Drifted=$DRIFT"
+    # Push to pushgateway
+    cat <<EOF | curl -s --data-binary @- \
+      "${PUSHGATEWAY_URL:-http://prometheus-pushgateway.observability.svc.cluster.local:9091}/metrics/job/drift-check"
+    platform_composition_drift_detected $DRIFT
+    platform_composition_total $TOTAL
+    EOF
+    [[ $DRIFT -eq 0 ]] && exit 0 || exit 1
+---
+# RBAC for the drift checker
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: drift-checker
+  namespace: crossplane-system
+  labels:
+    platform.kubecon.io/managed: "true"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: composition-drift-checker
+  labels:
+    platform.kubecon.io/managed: "true"
+rules:
+  - apiGroups: ["apiextensions.crossplane.io"]
+    resources: ["compositions"]
+    verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "create", "update"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: composition-drift-checker
+  labels:
+    platform.kubecon.io/managed: "true"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: composition-drift-checker
+subjects:
+  - kind: ServiceAccount
+    name: drift-checker
+    namespace: crossplane-system

@@ -1,0 +1,43 @@
+# ABOUTME: PrometheusRule for composition drift alerting.
+# ABOUTME: Fires when drift-check CronJob detects live vs git composition mismatch.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: composition-drift
+  namespace: observability
+  labels:
+    prometheus: platform
+    role: alert-rules
+spec:
+  groups:
+    - name: composition.drift
+      interval: 60s
+      rules:
+        - alert: CompositionDriftDetected
+          expr: |
+            platform_composition_drift_detected > 0
+          for: 5m
+          labels:
+            severity: warning
+            team: platform
+          annotations:
+            summary: "{{ $value }} composition(s) have drifted from git state"
+            description: >-
+              The composition drift checker found {{ $value }} composition(s)
+              whose live state does not match the expected git-committed hashes.
+              This indicates manual edits or failed reconciliation. Run
+              'kubectl get compositions' and compare against git.
+
+        - alert: CompositionDriftCheckStale
+          expr: |
+            time() - platform_composition_drift_check_timestamp_seconds > 1800
+          for: 5m
+          labels:
+            severity: warning
+            team: platform
+          annotations:
+            summary: "Composition drift check has not run in 30 minutes"
+            description: >-
+              The drift-check CronJob has not reported metrics in 30 minutes.
+              The job may be failing or the pushgateway may be unreachable.
+              Check: kubectl get cronjob composition-drift-check -n crossplane-system
