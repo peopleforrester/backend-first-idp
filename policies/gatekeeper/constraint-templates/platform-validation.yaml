@@ -1,0 +1,109 @@
+# ABOUTME: Gatekeeper ConstraintTemplate + Constraint for platform resource validation.
+# ABOUTME: Embeds OPA region and size policies inline, targets platform.kubecon.io resources.
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: platformvalidation
+  annotations:
+    description: Validates DatabaseInstance claims against team region and size policies.
+spec:
+  crd:
+    spec:
+      names:
+        kind: PlatformValidation
+      validation:
+        openAPIV3Schema:
+          type: object
+          properties:
+            teamRegions:
+              type: object
+              description: Map of team names to allowed regions.
+              additionalProperties:
+                type: array
+                items:
+                  type: string
+            teamMaxSize:
+              type: object
+              description: Map of team names to maximum allowed size.
+              additionalProperties:
+                type: string
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package platformvalidation
+
+        import rego.v1
+
+        # Size ordering for comparison
+        size_rank := {
+            "small": 1,
+            "medium": 2,
+            "large": 3,
+        }
+
+        # Extract claim fields
+        team := input.review.object.spec.team
+        region := input.review.object.spec.region
+        requested_size := input.review.object.spec.size
+
+        # --- Region enforcement ---
+        violation contains {"msg": msg} if {
+            team_regions := input.parameters.teamRegions
+            not team_regions[team]
+            msg := sprintf("Unknown team '%s'. Contact platform-team to onboard.", [team])
+        }
+
+        violation contains {"msg": msg} if {
+            team_regions := input.parameters.teamRegions
+            allowed := {r | some r in team_regions[team]}
+            not region in allowed
+            msg := sprintf("Team '%s' is not allowed to deploy in region '%s'. Allowed: %v", [team, region, allowed])
+        }
+
+        # --- Size enforcement ---
+        violation contains {"msg": msg} if {
+            team_max := input.parameters.teamMaxSize
+            not team_max[team]
+            msg := sprintf("Unknown team '%s'. No size policy defined.", [team])
+        }
+
+        violation contains {"msg": msg} if {
+            team_max := input.parameters.teamMaxSize
+            max_allowed := team_max[team]
+            size_rank[requested_size] > size_rank[max_allowed]
+            msg := sprintf("Team '%s' requested size '%s' but is capped at '%s'.", [team, requested_size, max_allowed])
+        }
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: PlatformValidation
+metadata:
+  name: platform-database-validation
+spec:
+  enforcementAction: deny
+  match:
+    kinds:
+      - apiGroups: ["platform.kubecon.io"]
+        kinds: ["DatabaseInstanceClaim"]
+  parameters:
+    teamRegions:
+      checkout:
+        - eu-west-1
+        - eu-central-1
+      payments:
+        - eu-west-1
+        - eu-central-1
+      analytics:
+        - eu-west-1
+        - eu-central-1
+        - us-east-1
+        - us-west-2
+      platform:
+        - eu-west-1
+        - eu-central-1
+        - us-east-1
+        - us-west-2
+    teamMaxSize:
+      checkout: medium
+      payments: large
+      analytics: medium
+      platform: large

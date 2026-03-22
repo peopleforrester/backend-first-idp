@@ -1,0 +1,11 @@
+# ABOUTME: Deliberately failing claim — triggers two OPA violations for demo purposes.
+# ABOUTME: checkout team cannot use us-west-2 (region) or large (size cap is medium).
+apiVersion: platform.kubecon.io/v1alpha1
+kind: DatabaseInstanceClaim
+metadata:
+  name: checkout-db-bad
+  namespace: checkout
+spec:
+  size: large
+  region: us-west-2
+  team: checkout
