@@ -1,0 +1,60 @@
+# ABOUTME: Backstage Software Template for requesting a managed cache (Redis/Memcached).
+# ABOUTME: Generates CacheInstanceClaim YAML and opens a PR.
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: cache-claim
+  title: Request a Cache
+  description: Provision a managed Redis or Memcached instance.
+  tags: [platform, cache, crossplane]
+spec:
+  owner: platform-team
+  type: resource-claim
+  parameters:
+    - title: Cache Configuration
+      required: [team, size, region]
+      properties:
+        team:
+          title: Team
+          type: string
+          enum: [checkout, payments, analytics, platform, identity, catalog, shipping, notifications, inventory, search, billing, marketing]
+        size:
+          title: Size
+          type: string
+          enum: [small, medium, large]
+          default: small
+        region:
+          title: Region
+          type: string
+          enum: [eu-west-1, eu-central-1, us-east-1, us-west-2]
+          default: eu-west-1
+        engine:
+          title: Engine
+          type: string
+          enum: [redis, memcached]
+          default: redis
+  steps:
+    - id: generate
+      name: Generate Claim
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          team: ${{ parameters.team }}
+          name: ${{ parameters.team }}-cache
+          size: ${{ parameters.size }}
+          region: ${{ parameters.region }}
+          engine: ${{ parameters.engine }}
+    - id: publish
+      name: Open PR
+      action: publish:github:pull-request
+      input:
+        repoUrl: github.com?repo=backend-first-idp&owner=peopleforrester
+        title: "platform: request cache ${{ parameters.team }}-cache"
+        branchName: "claim/${{ parameters.team }}/cache"
+        description: "Cache claim for ${{ parameters.team }} — ${{ parameters.engine }} ${{ parameters.size }} in ${{ parameters.region }}"
+        targetPath: teams/${{ parameters.team }}/claims
+  output:
+    links:
+      - title: Pull Request
+        url: ${{ steps.publish.output.remoteUrl }}

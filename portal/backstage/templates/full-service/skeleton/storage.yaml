@@ -1,0 +1,11 @@
+apiVersion: platform.kubecon.io/v1alpha1
+kind: ObjectStorageClaim
+metadata:
+  name: ${{ values.team }}-storage
+  namespace: ${{ values.team }}
+  labels:
+    team: ${{ values.team }}
+spec:
+  region: ${{ values.region }}
+  team: ${{ values.team }}
+  encryption: true

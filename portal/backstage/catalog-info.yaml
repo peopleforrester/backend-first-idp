@@ -1,0 +1,15 @@
+# ABOUTME: Root catalog entity for the backend-first IDP Backstage instance.
+# ABOUTME: Defines the platform system and links to all team entities.
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: backend-first-idp
+  description: Backend-first Internal Developer Platform — Crossplane, ArgoCD, Kyverno
+  annotations:
+    github.com/project-slug: peopleforrester/backend-first-idp
+    backstage.io/techdocs-ref: dir:.
+  links:
+    - url: https://github.com/peopleforrester/backend-first-idp
+      title: GitHub Repository
+spec:
+  owner: platform-team

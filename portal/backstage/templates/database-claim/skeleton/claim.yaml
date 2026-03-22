@@ -1,0 +1,14 @@
+apiVersion: platform.kubecon.io/v1alpha1
+kind: DatabaseInstanceClaim
+metadata:
+  name: ${{ values.name }}
+  namespace: ${{ values.team }}
+  labels:
+    team: ${{ values.team }}
+spec:
+  size: ${{ values.size }}
+  region: ${{ values.region }}
+  team: ${{ values.team }}
+  engine: ${{ values.engine }}
+  highAvailability: ${{ values.highAvailability }}
+  backupRetentionDays: ${{ values.backupRetentionDays }}

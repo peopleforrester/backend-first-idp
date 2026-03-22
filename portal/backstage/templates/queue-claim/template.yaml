@@ -1,0 +1,59 @@
+# ABOUTME: Backstage Software Template for requesting a message queue.
+# ABOUTME: Generates MessageQueueClaim YAML and opens a PR.
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: queue-claim
+  title: Request a Message Queue
+  description: Provision a managed message queue (SQS, Pub/Sub, or Service Bus).
+  tags: [platform, queue, crossplane]
+spec:
+  owner: platform-team
+  type: resource-claim
+  parameters:
+    - title: Queue Configuration
+      required: [team, region]
+      properties:
+        team:
+          title: Team
+          type: string
+          enum: [checkout, payments, analytics, platform, identity, catalog, shipping, notifications, inventory, search, billing, marketing]
+        region:
+          title: Region
+          type: string
+          enum: [eu-west-1, eu-central-1, us-east-1, us-west-2]
+          default: eu-west-1
+        fifo:
+          title: FIFO Ordering
+          type: boolean
+          default: false
+          description: Enable strict message ordering (higher cost)
+        deadLetterQueue:
+          title: Dead Letter Queue
+          type: boolean
+          default: true
+  steps:
+    - id: generate
+      name: Generate Claim
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          team: ${{ parameters.team }}
+          name: ${{ parameters.team }}-events
+          region: ${{ parameters.region }}
+          fifo: ${{ parameters.fifo }}
+          deadLetterQueue: ${{ parameters.deadLetterQueue }}
+    - id: publish
+      name: Open PR
+      action: publish:github:pull-request
+      input:
+        repoUrl: github.com?repo=backend-first-idp&owner=peopleforrester
+        title: "platform: request queue ${{ parameters.team }}-events"
+        branchName: "claim/${{ parameters.team }}/events"
+        description: "Queue claim for ${{ parameters.team }} in ${{ parameters.region }}"
+        targetPath: teams/${{ parameters.team }}/claims
+  output:
+    links:
+      - title: Pull Request
+        url: ${{ steps.publish.output.remoteUrl }}

@@ -1,0 +1,56 @@
+# ABOUTME: Backstage app configuration — connects to GitHub repo and Kubernetes clusters.
+# ABOUTME: Enables Software Templates, TechDocs, and Kubernetes plugin.
+app:
+  title: Backend-First IDP Portal
+  baseUrl: http://localhost:3000
+
+organization:
+  name: Platform Engineering
+
+backend:
+  baseUrl: http://localhost:7007
+  listen:
+    port: 7007
+  database:
+    client: better-sqlite3
+    connection: ':memory:'
+
+integrations:
+  github:
+    - host: github.com
+      token: ${GITHUB_TOKEN}
+
+catalog:
+  import:
+    entityFilename: catalog-info.yaml
+  rules:
+    - allow: [Component, System, API, Resource, Template, Location, Group]
+  locations:
+    # Platform team entities
+    - type: file
+      target: ./entities/platform-system.yaml
+    # Software Templates
+    - type: file
+      target: ./templates/all-templates.yaml
+    # Team entities
+    - type: file
+      target: ./entities/teams.yaml
+
+techdocs:
+  builder: local
+  generator:
+    runIn: local
+  publisher:
+    type: local
+
+kubernetes:
+  serviceLocatorMethod:
+    type: multiTenant
+  clusterLocatorMethods:
+    - type: config
+      clusters:
+        - url: ${K8S_CLUSTER_URL}
+          name: platform-cluster
+          authProvider: serviceAccount
+          serviceAccountToken: ${K8S_SA_TOKEN}
+          skipTLSVerify: true

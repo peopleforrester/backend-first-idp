@@ -1,0 +1,52 @@
+# ABOUTME: Backstage Software Template for requesting a CDN distribution.
+# ABOUTME: Generates CDNDistributionClaim YAML and opens a PR.
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: cdn-claim
+  title: Request a CDN Distribution
+  description: Provision a CDN (CloudFront, Cloud CDN, or Azure Front Door).
+  tags: [platform, cdn, crossplane]
+spec:
+  owner: platform-team
+  type: resource-claim
+  parameters:
+    - title: CDN Configuration
+      required: [team, originDomain]
+      properties:
+        team:
+          title: Team
+          type: string
+          enum: [checkout, payments, analytics, platform, identity, catalog, shipping, notifications, inventory, search, billing, marketing]
+        originDomain:
+          title: Origin Domain
+          type: string
+          description: The backend domain to serve content from
+        cacheTtlSeconds:
+          title: Cache TTL (seconds)
+          type: number
+          default: 86400
+  steps:
+    - id: generate
+      name: Generate Claim
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          team: ${{ parameters.team }}
+          name: ${{ parameters.team }}-cdn
+          originDomain: ${{ parameters.originDomain }}
+          cacheTtlSeconds: ${{ parameters.cacheTtlSeconds }}
+    - id: publish
+      name: Open PR
+      action: publish:github:pull-request
+      input:
+        repoUrl: github.com?repo=backend-first-idp&owner=peopleforrester
+        title: "platform: request CDN ${{ parameters.team }}-cdn"
+        branchName: "claim/${{ parameters.team }}/cdn"
+        description: "CDN claim for ${{ parameters.team }} — origin: ${{ parameters.originDomain }}"
+        targetPath: teams/${{ parameters.team }}/claims
+  output:
+    links:
+      - title: Pull Request
+        url: ${{ steps.publish.output.remoteUrl }}

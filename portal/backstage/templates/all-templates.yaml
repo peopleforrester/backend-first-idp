@@ -1,0 +1,15 @@
+# ABOUTME: Catalog location file registering all Software Templates.
+# ABOUTME: Referenced from app-config.yaml catalog.locations.
+apiVersion: backstage.io/v1alpha1
+kind: Location
+metadata:
+  name: platform-templates
+  description: Platform resource claim templates
+spec:
+  targets:
+    - ./database-claim/template.yaml
+    - ./cache-claim/template.yaml
+    - ./queue-claim/template.yaml
+    - ./storage-claim/template.yaml
+    - ./cdn-claim/template.yaml
+    - ./full-service/template.yaml

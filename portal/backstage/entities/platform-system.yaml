@@ -1,0 +1,36 @@
+# ABOUTME: Platform system entity for Backstage catalog.
+# ABOUTME: Represents the IDP as a system with its component APIs.
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: backend-first-idp
+  description: Backend-first Internal Developer Platform
+  annotations:
+    github.com/project-slug: peopleforrester/backend-first-idp
+  links:
+    - url: https://github.com/peopleforrester/backend-first-idp
+      title: Repository
+spec:
+  owner: platform-team
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: platform-api
+  description: Platform resource API — 7 resource types on platform.kubecon.io
+  annotations:
+    github.com/project-slug: peopleforrester/backend-first-idp
+spec:
+  type: crossplane-xrd
+  lifecycle: production
+  owner: platform-team
+  system: backend-first-idp
+  definition: |
+    7 CompositeResourceDefinitions on platform.kubecon.io/v1alpha1:
+    - DatabaseInstance
+    - CacheInstance
+    - MessageQueue
+    - ObjectStorage
+    - CDNDistribution
+    - DNSRecord
+    - KubernetesNamespace

@@ -1,0 +1,31 @@
+# ABOUTME: Docker Compose for local Backstage development.
+# ABOUTME: Runs Backstage with PostgreSQL backend for demo purposes.
+services:
+  backstage:
+    image: backstage/backstage:latest
+    ports:
+      - "3000:3000"
+      - "7007:7007"
+    environment:
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - K8S_CLUSTER_URL=${K8S_CLUSTER_URL:-https://kubernetes.default.svc}
+      - K8S_SA_TOKEN=${K8S_SA_TOKEN:-}
+    volumes:
+      - ./app-config.yaml:/app/app-config.yaml
+      - ./templates:/app/templates
+      - ./entities:/app/entities
+      - ./catalog-info.yaml:/app/catalog-info.yaml
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: backstage
+      POSTGRES_PASSWORD: backstage
+      POSTGRES_DB: backstage
+    volumes:
+      - backstage-db:/var/lib/postgresql/data
+
+volumes:
+  backstage-db:

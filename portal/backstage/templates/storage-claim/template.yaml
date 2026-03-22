@@ -1,0 +1,58 @@
+# ABOUTME: Backstage Software Template for requesting object storage.
+# ABOUTME: Generates ObjectStorageClaim YAML and opens a PR.
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: storage-claim
+  title: Request Object Storage
+  description: Provision a managed storage bucket (S3, GCS, or Blob Storage).
+  tags: [platform, storage, crossplane]
+spec:
+  owner: platform-team
+  type: resource-claim
+  parameters:
+    - title: Storage Configuration
+      required: [team, region]
+      properties:
+        team:
+          title: Team
+          type: string
+          enum: [checkout, payments, analytics, platform, identity, catalog, shipping, notifications, inventory, search, billing, marketing]
+        region:
+          title: Region
+          type: string
+          enum: [eu-west-1, eu-central-1, us-east-1, us-west-2]
+          default: eu-west-1
+        versioning:
+          title: Object Versioning
+          type: boolean
+          default: false
+        encryption:
+          title: Server-Side Encryption
+          type: boolean
+          default: true
+  steps:
+    - id: generate
+      name: Generate Claim
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          team: ${{ parameters.team }}
+          name: ${{ parameters.team }}-storage
+          region: ${{ parameters.region }}
+          versioning: ${{ parameters.versioning }}
+          encryption: ${{ parameters.encryption }}
+    - id: publish
+      name: Open PR
+      action: publish:github:pull-request
+      input:
+        repoUrl: github.com?repo=backend-first-idp&owner=peopleforrester
+        title: "platform: request storage ${{ parameters.team }}-storage"
+        branchName: "claim/${{ parameters.team }}/storage"
+        description: "Storage claim for ${{ parameters.team }} in ${{ parameters.region }}"
+        targetPath: teams/${{ parameters.team }}/claims
+  output:
+    links:
+      - title: Pull Request
+        url: ${{ steps.publish.output.remoteUrl }}

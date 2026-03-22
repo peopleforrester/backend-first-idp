@@ -1,0 +1,11 @@
+apiVersion: platform.kubecon.io/v1alpha1
+kind: MessageQueueClaim
+metadata:
+  name: ${{ values.team }}-events
+  namespace: ${{ values.team }}
+  labels:
+    team: ${{ values.team }}
+spec:
+  region: ${{ values.region }}
+  team: ${{ values.team }}
+  deadLetterQueue: true

@@ -1,0 +1,68 @@
+# ABOUTME: Backstage Software Template for a full service — DB + cache + queue + storage.
+# ABOUTME: The "golden path" template that provisions everything a new service needs.
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: full-service
+  title: Request Full Service Resources
+  description: Provision a complete service with database, cache, message queue, and storage in one step.
+  tags: [platform, golden-path, crossplane]
+spec:
+  owner: platform-team
+  type: resource-claim
+  parameters:
+    - title: Service Configuration
+      required: [team, size, region]
+      properties:
+        team:
+          title: Team
+          type: string
+          enum: [checkout, payments, analytics, platform, identity, catalog, shipping, notifications, inventory, search, billing, marketing]
+        size:
+          title: Instance Size (DB + Cache)
+          type: string
+          enum: [small, medium, large]
+          default: small
+        region:
+          title: Region
+          type: string
+          enum: [eu-west-1, eu-central-1, us-east-1, us-west-2]
+          default: eu-west-1
+        engine:
+          title: Database Engine
+          type: string
+          enum: [postgres, mysql]
+          default: postgres
+  steps:
+    - id: generate
+      name: Generate All Claims
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          team: ${{ parameters.team }}
+          size: ${{ parameters.size }}
+          region: ${{ parameters.region }}
+          engine: ${{ parameters.engine }}
+    - id: publish
+      name: Open PR
+      action: publish:github:pull-request
+      input:
+        repoUrl: github.com?repo=backend-first-idp&owner=peopleforrester
+        title: "platform: full service setup for ${{ parameters.team }}"
+        branchName: "claim/${{ parameters.team }}/full-service"
+        description: |
+          ## Full Service Claim
+
+          Provisioning complete resource set for **${{ parameters.team }}**:
+          - Database (${{ parameters.engine }}, ${{ parameters.size }})
+          - Cache (Redis, ${{ parameters.size }})
+          - Message Queue
+          - Object Storage
+
+          All in **${{ parameters.region }}**.
+        targetPath: teams/${{ parameters.team }}/claims
+  output:
+    links:
+      - title: Pull Request
+        url: ${{ steps.publish.output.remoteUrl }}
