@@ -1,0 +1,73 @@
+# ABOUTME: AWS Composition for MessageQueue — maps platform API to SQS + dead-letter queue.
+# ABOUTME: Uses Pipeline mode with function-patch-and-transform.
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: message-queue-small-aws
+  labels:
+    provider: aws
+    crossplane.io/xrd: xmessagequeues.platform.kubecon.io
+spec:
+  compositeTypeRef:
+    apiVersion: platform.kubecon.io/v1alpha1
+    kind: MessageQueue
+  mode: Pipeline
+  pipeline:
+    - step: patch-and-transform
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+          - name: sqs-queue
+            base:
+              apiVersion: sqs.aws.upbound.io/v1beta2
+              kind: Queue
+              spec:
+                forProvider:
+                  visibilityTimeoutSeconds: 30
+                  messageRetentionSeconds: 345600
+                  receiveWaitTimeSeconds: 10
+                  sqsManagedSseEnabled: true
+                providerConfigRef:
+                  name: aws-provider
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.region
+                toFieldPath: spec.forProvider.region
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.fifo
+                toFieldPath: spec.forProvider.fifoQueue
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.messageRetentionDays
+                toFieldPath: spec.forProvider.messageRetentionSeconds
+                transforms:
+                  - type: math
+                    math:
+                      type: Multiply
+                      multiply: 86400
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.team
+                toFieldPath: spec.forProvider.tags["team"]
+              - type: ToCompositeFieldPath
+                fromFieldPath: status.atProvider.arn
+                toFieldPath: status.endpoint
+
+          - name: sqs-dead-letter-queue
+            base:
+              apiVersion: sqs.aws.upbound.io/v1beta2
+              kind: Queue
+              spec:
+                forProvider:
+                  messageRetentionSeconds: 1209600
+                  sqsManagedSseEnabled: true
+                providerConfigRef:
+                  name: aws-provider
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.region
+                toFieldPath: spec.forProvider.region
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.team
+                toFieldPath: spec.forProvider.tags["team"]

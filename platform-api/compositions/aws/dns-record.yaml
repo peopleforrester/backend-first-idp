@@ -1,0 +1,46 @@
+# ABOUTME: AWS Composition for DNSRecord — maps platform API to Route53.
+# ABOUTME: Uses Pipeline mode with function-patch-and-transform.
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: dns-record-aws
+  labels:
+    provider: aws
+    crossplane.io/xrd: xdnsrecords.platform.kubecon.io
+spec:
+  compositeTypeRef:
+    apiVersion: platform.kubecon.io/v1alpha1
+    kind: DNSRecord
+  mode: Pipeline
+  pipeline:
+    - step: patch-and-transform
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+          - name: route53-record
+            base:
+              apiVersion: route53.aws.upbound.io/v1beta2
+              kind: Record
+              spec:
+                forProvider:
+                  zoneIdSelector:
+                    matchLabels:
+                      platform.kubecon.io/managed: "true"
+                providerConfigRef:
+                  name: aws-provider
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.recordType
+                toFieldPath: spec.forProvider.type
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.name
+                toFieldPath: spec.forProvider.name
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.value
+                toFieldPath: spec.forProvider.records[0]
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.ttl
+                toFieldPath: spec.forProvider.ttl

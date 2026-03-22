@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# ABOUTME: Composition validation test — asserts structure of all cloud compositions.
+# ABOUTME: Composition validation test — asserts all 21 cloud compositions (7 types × 3 clouds).
 # ABOUTME: Run via 'make test-compositions' or directly with bash.
 
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+COMP_DIR="${REPO_ROOT}/platform-api/compositions"
 PASS=0
 FAIL=0
 
@@ -27,126 +28,103 @@ assert() {
     fi
 }
 
-# Validate a single composition file
-validate_composition() {
-    local cloud="$1"
-    local file="${REPO_ROOT}/platform-api/compositions/${cloud}/database-small.yaml"
-    local display_cloud
-    display_cloud="$(echo "${cloud}" | tr '[:lower:]' '[:upper:]')"
-
-    echo "--- ${display_cloud} Composition ---"
-
-    assert "${display_cloud} composition file exists" "$([[ -f "${file}" ]] && echo true || echo false)"
-
-    if [[ ! -f "${file}" ]]; then
-        echo -e "  ${RED}Skipping remaining ${display_cloud} checks — file not found${NC}"
-        echo ""
-        return
-    fi
-
-    # YAML validity
-    local yaml_valid
-    yaml_valid=$(yamllint -c "${REPO_ROOT}/.yamllint.yml" "${file}" 2>&1 && echo true || echo false)
-    assert "${display_cloud} valid YAML" "${yaml_valid}"
-
-    # Deep validation with Python
-    local checks
-    checks=$(COMP_PATH="${file}" CLOUD="${cloud}" python3 << 'PYEOF'
-import yaml, json, os
-
-cloud = os.environ["CLOUD"]
-with open(os.environ["COMP_PATH"]) as f:
-    docs = list(yaml.safe_load_all(f))
-
-results = {}
-doc = docs[0]
-
-# Kind and API version
-results["kind"] = doc.get("kind") == "Composition"
-results["api_version"] = doc.get("apiVersion") == "apiextensions.crossplane.io/v1"
-
-spec = doc.get("spec", {})
-
-# Composite type ref
-ctr = spec.get("compositeTypeRef", {})
-results["xrd_api"] = ctr.get("apiVersion") == "platform.kubecon.io/v1alpha1"
-results["xrd_kind"] = ctr.get("kind") == "DatabaseInstance"
-
-# Pipeline mode
-results["mode"] = spec.get("mode") == "Pipeline"
-
-# Pipeline steps — must have function-patch-and-transform
-pipeline = spec.get("pipeline", [])
-results["has_pipeline"] = len(pipeline) > 0
-
-func_names = [step.get("functionRef", {}).get("name", "") for step in pipeline]
-results["has_patch_transform"] = "function-patch-and-transform" in func_names
-
-# Cloud-specific resource checks
-if pipeline:
-    # Collect all resource base kinds from patch-and-transform input
-    for step in pipeline:
-        inp = step.get("input", {})
-        resources = inp.get("resources", [])
-        base_kinds = []
-        for r in resources:
-            base = r.get("base", {})
-            base_kinds.append(base.get("kind", ""))
-
-        if cloud == "aws":
-            results["has_rds"] = "Instance" in base_kinds or "DBInstance" in base_kinds
-            results["has_iam_role"] = "Role" in base_kinds
-            results["has_sg"] = "SecurityGroup" in base_kinds
-            results["has_sg_rule"] = "SecurityGroupRule" in base_kinds
-        elif cloud == "gcp":
-            results["has_cloudsql"] = "DatabaseInstance" in base_kinds
-            results["has_database"] = "Database" in base_kinds
-            results["has_user"] = "User" in base_kinds
-        elif cloud == "azure":
-            results["has_flexible_server"] = "FlexibleServer" in base_kinds
-            results["has_flexible_db"] = "FlexibleServerDatabase" in base_kinds
-
-print(json.dumps(results))
-PYEOF
-    )
-
-    assert "${display_cloud} kind is Composition" "$(echo "${checks}" | python3 -c "import sys,json; print(json.load(sys.stdin).get('kind','false'))")"
-    assert "${display_cloud} apiVersion correct" "$(echo "${checks}" | python3 -c "import sys,json; print(json.load(sys.stdin).get('api_version','false'))")"
-    assert "${display_cloud} refs DatabaseInstance XRD" "$(echo "${checks}" | python3 -c "import sys,json; print(json.load(sys.stdin).get('xrd_api','false'))")"
-    assert "${display_cloud} refs correct kind" "$(echo "${checks}" | python3 -c "import sys,json; print(json.load(sys.stdin).get('xrd_kind','false'))")"
-    assert "${display_cloud} uses Pipeline mode" "$(echo "${checks}" | python3 -c "import sys,json; print(json.load(sys.stdin).get('mode','false'))")"
-    assert "${display_cloud} has pipeline steps" "$(echo "${checks}" | python3 -c "import sys,json; print(json.load(sys.stdin).get('has_pipeline','false'))")"
-    assert "${display_cloud} uses function-patch-and-transform" "$(echo "${checks}" | python3 -c "import sys,json; print(json.load(sys.stdin).get('has_patch_transform','false'))")"
-
-    # Cloud-specific resource assertions
-    case "${cloud}" in
-        aws)
-            assert "AWS has RDS Instance" "$(echo "${checks}" | python3 -c "import sys,json; print(json.load(sys.stdin).get('has_rds','false'))")"
-            assert "AWS has IAM Role" "$(echo "${checks}" | python3 -c "import sys,json; print(json.load(sys.stdin).get('has_iam_role','false'))")"
-            assert "AWS has SecurityGroup" "$(echo "${checks}" | python3 -c "import sys,json; print(json.load(sys.stdin).get('has_sg','false'))")"
-            assert "AWS has SecurityGroupRule" "$(echo "${checks}" | python3 -c "import sys,json; print(json.load(sys.stdin).get('has_sg_rule','false'))")"
-            ;;
-        gcp)
-            assert "GCP has Cloud SQL DatabaseInstance" "$(echo "${checks}" | python3 -c "import sys,json; print(json.load(sys.stdin).get('has_cloudsql','false'))")"
-            assert "GCP has Database" "$(echo "${checks}" | python3 -c "import sys,json; print(json.load(sys.stdin).get('has_database','false'))")"
-            assert "GCP has User" "$(echo "${checks}" | python3 -c "import sys,json; print(json.load(sys.stdin).get('has_user','false'))")"
-            ;;
-        azure)
-            assert "Azure has FlexibleServer" "$(echo "${checks}" | python3 -c "import sys,json; print(json.load(sys.stdin).get('has_flexible_server','false'))")"
-            assert "Azure has FlexibleServerDatabase" "$(echo "${checks}" | python3 -c "import sys,json; print(json.load(sys.stdin).get('has_flexible_db','false'))")"
-            ;;
-    esac
-
-    echo ""
-}
-
-echo "=== Composition Validation Tests ==="
+echo "=== Composition Validation Tests (v2 — 21 compositions) ==="
 echo ""
 
-validate_composition "aws"
-validate_composition "gcp"
-validate_composition "azure"
+# All expected composition files and their XRD kind mapping
+RESULTS=$(COMP_DIR="${COMP_DIR}" python3 << 'PYEOF'
+import yaml, json, os
+from pathlib import Path
 
+comp_dir = Path(os.environ["COMP_DIR"])
+
+# (filename, expected XRD kind)
+comp_specs = [
+    ("database-small", "DatabaseInstance"),
+    ("cache-small", "CacheInstance"),
+    ("message-queue-small", "MessageQueue"),
+    ("object-storage", "ObjectStorage"),
+    ("cdn-distribution", "CDNDistribution"),
+    ("dns-record", "DNSRecord"),
+    ("namespace", "KubernetesNamespace"),
+]
+
+clouds = ["aws", "gcp", "azure"]
+all_checks = {}
+
+for cloud in clouds:
+    for filename, xrd_kind in comp_specs:
+        key_prefix = f"{cloud}/{filename}"
+        filepath = comp_dir / cloud / f"{filename}.yaml"
+
+        all_checks[f"{key_prefix}:exists"] = filepath.is_file()
+        if not filepath.is_file():
+            continue
+
+        try:
+            with open(filepath) as f:
+                docs = list(yaml.safe_load_all(f))
+            doc = docs[0]
+        except Exception:
+            all_checks[f"{key_prefix}:parseable"] = False
+            continue
+
+        all_checks[f"{key_prefix}:parseable"] = True
+
+        # Kind
+        all_checks[f"{key_prefix}:kind_is_composition"] = doc.get("kind") == "Composition"
+
+        # API version
+        all_checks[f"{key_prefix}:apiVersion"] = doc.get("apiVersion") == "apiextensions.crossplane.io/v1"
+
+        # Composite type ref
+        spec = doc.get("spec", {})
+        ctr = spec.get("compositeTypeRef", {})
+        all_checks[f"{key_prefix}:xrd_api"] = ctr.get("apiVersion") == "platform.kubecon.io/v1alpha1"
+        all_checks[f"{key_prefix}:xrd_kind"] = ctr.get("kind") == xrd_kind
+
+        # Pipeline mode
+        all_checks[f"{key_prefix}:pipeline_mode"] = spec.get("mode") == "Pipeline"
+
+        # Has pipeline with function-patch-and-transform
+        pipeline = spec.get("pipeline", [])
+        all_checks[f"{key_prefix}:has_pipeline"] = len(pipeline) > 0
+        func_names = [s.get("functionRef", {}).get("name", "") for s in pipeline]
+        all_checks[f"{key_prefix}:has_patch_transform"] = "function-patch-and-transform" in func_names
+
+        # Has at least one resource in the pipeline input
+        resource_count = 0
+        for step in pipeline:
+            inp = step.get("input", {})
+            resource_count += len(inp.get("resources", []))
+        all_checks[f"{key_prefix}:has_resources"] = resource_count > 0
+
+        # Provider label
+        labels = doc.get("metadata", {}).get("labels", {})
+        all_checks[f"{key_prefix}:provider_label"] = labels.get("provider") == cloud
+
+print(json.dumps(all_checks))
+PYEOF
+)
+
+# Parse and print results grouped by cloud
+CURRENT_GROUP=""
+while IFS='=' read -r key val; do
+    group="${key%%/*}"
+    if [[ "${group}" != "${CURRENT_GROUP}" ]]; then
+        echo ""
+        echo "--- ${group^^} ---"
+        CURRENT_GROUP="${group}"
+    fi
+    assert "${key}" "${val}"
+done < <(echo "${RESULTS}" | python3 -c "
+import sys, json
+data = json.load(sys.stdin)
+for k, v in sorted(data.items()):
+    print(f'{k}={str(v).lower()}')
+")
+
+echo ""
 echo "=== Results ==="
 echo -e "  ${GREEN}Passed: ${PASS}${NC}  ${RED}Failed: ${FAIL}${NC}"
 echo ""

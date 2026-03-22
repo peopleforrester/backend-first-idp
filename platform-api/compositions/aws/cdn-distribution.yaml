@@ -1,0 +1,72 @@
+# ABOUTME: AWS Composition for CDNDistribution — maps platform API to CloudFront.
+# ABOUTME: Uses Pipeline mode with function-patch-and-transform.
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: cdn-distribution-aws
+  labels:
+    provider: aws
+    crossplane.io/xrd: xcdndistributions.platform.kubecon.io
+spec:
+  compositeTypeRef:
+    apiVersion: platform.kubecon.io/v1alpha1
+    kind: CDNDistribution
+  mode: Pipeline
+  pipeline:
+    - step: patch-and-transform
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+          - name: cloudfront-distribution
+            base:
+              apiVersion: cloudfront.aws.upbound.io/v1beta2
+              kind: Distribution
+              spec:
+                forProvider:
+                  enabled: true
+                  isIpv6Enabled: true
+                  defaultCacheBehavior:
+                    - viewerProtocolPolicy: redirect-to-https
+                      allowedMethods:
+                        - GET
+                        - HEAD
+                      cachedMethods:
+                        - GET
+                        - HEAD
+                      compress: true
+                      targetOriginId: platform-origin
+                      forwardedValues:
+                        - queryString: false
+                          cookies:
+                            - forward: none
+                  origin:
+                    - originId: platform-origin
+                      customOriginConfig:
+                        - httpPort: 80
+                          httpsPort: 443
+                          originProtocolPolicy: https-only
+                          originSslProtocols:
+                            - TLSv1.2
+                  restrictions:
+                    - geoRestriction:
+                        - restrictionType: none
+                  viewerCertificate:
+                    - cloudfrontDefaultCertificate: true
+                providerConfigRef:
+                  name: aws-provider
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.originDomain
+                toFieldPath: spec.forProvider.origin[0].domainName
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.cacheTtlSeconds
+                toFieldPath: spec.forProvider.defaultCacheBehavior[0].defaultTtl
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.team
+                toFieldPath: spec.forProvider.tags["team"]
+              - type: ToCompositeFieldPath
+                fromFieldPath: status.atProvider.domainName
+                toFieldPath: status.endpoint

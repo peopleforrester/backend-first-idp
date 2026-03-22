@@ -1,0 +1,61 @@
+# ABOUTME: AWS Composition for CacheInstance — maps platform API to ElastiCache Redis.
+# ABOUTME: Uses Pipeline mode with function-patch-and-transform.
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: cache-small-aws
+  labels:
+    provider: aws
+    crossplane.io/xrd: xcacheinstances.platform.kubecon.io
+spec:
+  compositeTypeRef:
+    apiVersion: platform.kubecon.io/v1alpha1
+    kind: CacheInstance
+  mode: Pipeline
+  pipeline:
+    - step: patch-and-transform
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+          - name: elasticache-replication-group
+            base:
+              apiVersion: elasticache.aws.upbound.io/v1beta2
+              kind: ReplicationGroup
+              spec:
+                forProvider:
+                  description: Managed by Crossplane
+                  engine: redis
+                  engineVersion: "7.1"
+                  nodeType: cache.t4g.medium
+                  numCacheClusters: 1
+                  automaticFailoverEnabled: false
+                  atRestEncryptionEnabled: true
+                  transitEncryptionEnabled: true
+                  autoMinorVersionUpgrade: true
+                providerConfigRef:
+                  name: aws-provider
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.region
+                toFieldPath: spec.forProvider.region
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.size
+                toFieldPath: spec.forProvider.nodeType
+                transforms:
+                  - type: map
+                    map:
+                      small: cache.t4g.medium
+                      medium: cache.t4g.xlarge
+                      large: cache.r7g.xlarge
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.team
+                toFieldPath: spec.forProvider.tags["team"]
+              - type: ToCompositeFieldPath
+                fromFieldPath: status.atProvider.primaryEndpointAddress
+                toFieldPath: status.endpoint
+              - type: ToCompositeFieldPath
+                fromFieldPath: status.atProvider.port
+                toFieldPath: status.port

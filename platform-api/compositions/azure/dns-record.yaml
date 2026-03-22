@@ -1,0 +1,47 @@
+# ABOUTME: Azure Composition for DNSRecord — maps platform API to Azure DNS.
+# ABOUTME: Uses Pipeline mode with function-patch-and-transform.
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: dns-record-azure
+  labels:
+    provider: azure
+    crossplane.io/xrd: xdnsrecords.platform.kubecon.io
+spec:
+  compositeTypeRef:
+    apiVersion: platform.kubecon.io/v1alpha1
+    kind: DNSRecord
+  mode: Pipeline
+  pipeline:
+    - step: patch-and-transform
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+          - name: dns-record-set
+            base:
+              apiVersion: network.azure.upbound.io/v1beta2
+              kind: DNSARecordSet
+              spec:
+                forProvider:
+                  zoneName: platform.kubecon.io
+                  resourceGroupNameSelector:
+                    matchControllerRef: true
+                  ttl: 300
+                providerConfigRef:
+                  name: azure-provider
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.name
+                toFieldPath: spec.forProvider.name
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.ttl
+                toFieldPath: spec.forProvider.ttl
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.value
+                toFieldPath: spec.forProvider.records[0]
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.team
+                toFieldPath: spec.forProvider.tags["team"]

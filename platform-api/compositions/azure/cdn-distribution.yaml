@@ -1,0 +1,55 @@
+# ABOUTME: Azure Composition for CDNDistribution — maps platform API to Azure Front Door.
+# ABOUTME: Uses Pipeline mode with function-patch-and-transform.
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: cdn-distribution-azure
+  labels:
+    provider: azure
+    crossplane.io/xrd: xcdndistributions.platform.kubecon.io
+spec:
+  compositeTypeRef:
+    apiVersion: platform.kubecon.io/v1alpha1
+    kind: CDNDistribution
+  mode: Pipeline
+  pipeline:
+    - step: patch-and-transform
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+          - name: frontdoor-profile
+            base:
+              apiVersion: cdn.azure.upbound.io/v1beta2
+              kind: FrontdoorProfile
+              spec:
+                forProvider:
+                  skuName: Standard_AzureFrontDoor
+                  resourceGroupNameSelector:
+                    matchControllerRef: true
+                providerConfigRef:
+                  name: azure-provider
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.team
+                toFieldPath: spec.forProvider.tags["team"]
+
+          - name: frontdoor-endpoint
+            base:
+              apiVersion: cdn.azure.upbound.io/v1beta2
+              kind: FrontdoorEndpoint
+              spec:
+                forProvider:
+                  cdnFrontdoorProfileIdSelector:
+                    matchControllerRef: true
+                providerConfigRef:
+                  name: azure-provider
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.team
+                toFieldPath: spec.forProvider.tags["team"]
+              - type: ToCompositeFieldPath
+                fromFieldPath: status.atProvider.hostName
+                toFieldPath: status.endpoint

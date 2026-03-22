@@ -1,0 +1,67 @@
+# ABOUTME: Azure Composition for CacheInstance — maps platform API to Azure Cache for Redis.
+# ABOUTME: Uses Pipeline mode with function-patch-and-transform and region mapping.
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: cache-small-azure
+  labels:
+    provider: azure
+    crossplane.io/xrd: xcacheinstances.platform.kubecon.io
+spec:
+  compositeTypeRef:
+    apiVersion: platform.kubecon.io/v1alpha1
+    kind: CacheInstance
+  mode: Pipeline
+  pipeline:
+    - step: patch-and-transform
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+          - name: redis-cache
+            base:
+              apiVersion: cache.azure.upbound.io/v1beta2
+              kind: RedisCache
+              spec:
+                forProvider:
+                  capacity: 1
+                  family: C
+                  skuName: Standard
+                  enableNonSslPort: false
+                  minimumTlsVersion: "1.2"
+                  redisVersion: "6"
+                  resourceGroupNameSelector:
+                    matchControllerRef: true
+                providerConfigRef:
+                  name: azure-provider
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.region
+                toFieldPath: spec.forProvider.location
+                transforms:
+                  - type: map
+                    map:
+                      eu-west-1: westeurope
+                      eu-central-1: germanywestcentral
+                      us-east-1: eastus
+                      us-west-2: westus2
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.size
+                toFieldPath: spec.forProvider.capacity
+                transforms:
+                  - type: map
+                    map:
+                      small: 1
+                      medium: 2
+                      large: 6
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.team
+                toFieldPath: spec.forProvider.tags["team"]
+              - type: ToCompositeFieldPath
+                fromFieldPath: status.atProvider.hostname
+                toFieldPath: status.endpoint
+              - type: ToCompositeFieldPath
+                fromFieldPath: status.atProvider.sslPort
+                toFieldPath: status.port

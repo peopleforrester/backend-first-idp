@@ -1,0 +1,69 @@
+# ABOUTME: GCP Composition for MessageQueue — maps platform API to Pub/Sub topic + subscription.
+# ABOUTME: Uses Pipeline mode with function-patch-and-transform.
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: message-queue-small-gcp
+  labels:
+    provider: gcp
+    crossplane.io/xrd: xmessagequeues.platform.kubecon.io
+spec:
+  compositeTypeRef:
+    apiVersion: platform.kubecon.io/v1alpha1
+    kind: MessageQueue
+  mode: Pipeline
+  pipeline:
+    - step: patch-and-transform
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+          - name: pubsub-topic
+            base:
+              apiVersion: pubsub.gcp.upbound.io/v1beta2
+              kind: Topic
+              spec:
+                forProvider:
+                  messageRetentionDuration: 345600s
+                providerConfigRef:
+                  name: gcp-provider
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.team
+                toFieldPath: spec.forProvider.labels["team"]
+              - type: ToCompositeFieldPath
+                fromFieldPath: status.atProvider.id
+                toFieldPath: status.endpoint
+
+          - name: pubsub-subscription
+            base:
+              apiVersion: pubsub.gcp.upbound.io/v1beta2
+              kind: Subscription
+              spec:
+                forProvider:
+                  topicSelector:
+                    matchControllerRef: true
+                  ackDeadlineSeconds: 30
+                  enableMessageOrdering: false
+                  retainAckedMessages: false
+                  deadLetterPolicy:
+                    - maxDeliveryAttempts: 5
+                providerConfigRef:
+                  name: gcp-provider
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.messageRetentionDays
+                toFieldPath: spec.forProvider.messageRetentionDuration
+                transforms:
+                  - type: string
+                    string:
+                      type: Format
+                      fmt: "%ds"
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.fifo
+                toFieldPath: spec.forProvider.enableMessageOrdering
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.team
+                toFieldPath: spec.forProvider.labels["team"]

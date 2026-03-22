@@ -1,0 +1,67 @@
+# ABOUTME: Azure Composition for ObjectStorage — maps platform API to Blob Storage.
+# ABOUTME: Uses Pipeline mode with function-patch-and-transform and region mapping.
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: object-storage-azure
+  labels:
+    provider: azure
+    crossplane.io/xrd: xobjectstorages.platform.kubecon.io
+spec:
+  compositeTypeRef:
+    apiVersion: platform.kubecon.io/v1alpha1
+    kind: ObjectStorage
+  mode: Pipeline
+  pipeline:
+    - step: patch-and-transform
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+          - name: storage-account
+            base:
+              apiVersion: storage.azure.upbound.io/v1beta2
+              kind: Account
+              spec:
+                forProvider:
+                  accountTier: Standard
+                  accountReplicationType: LRS
+                  accountKind: StorageV2
+                  minTlsVersion: TLS1_2
+                  enableHttpsTrafficOnly: true
+                  publicNetworkAccessEnabled: false
+                  resourceGroupNameSelector:
+                    matchControllerRef: true
+                providerConfigRef:
+                  name: azure-provider
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.region
+                toFieldPath: spec.forProvider.location
+                transforms:
+                  - type: map
+                    map:
+                      eu-west-1: westeurope
+                      eu-central-1: germanywestcentral
+                      us-east-1: eastus
+                      us-west-2: westus2
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.team
+                toFieldPath: spec.forProvider.tags["team"]
+              - type: ToCompositeFieldPath
+                fromFieldPath: status.atProvider.primaryBlobEndpoint
+                toFieldPath: status.endpoint
+
+          - name: storage-container
+            base:
+              apiVersion: storage.azure.upbound.io/v1beta1
+              kind: Container
+              spec:
+                forProvider:
+                  storageAccountNameSelector:
+                    matchControllerRef: true
+                  containerAccessType: private
+                providerConfigRef:
+                  name: azure-provider

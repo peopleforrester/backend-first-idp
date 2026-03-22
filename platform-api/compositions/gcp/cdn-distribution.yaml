@@ -1,0 +1,61 @@
+# ABOUTME: GCP Composition for CDNDistribution — maps platform API to Cloud CDN + backend bucket.
+# ABOUTME: Uses Pipeline mode with function-patch-and-transform.
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: cdn-distribution-gcp
+  labels:
+    provider: gcp
+    crossplane.io/xrd: xcdndistributions.platform.kubecon.io
+spec:
+  compositeTypeRef:
+    apiVersion: platform.kubecon.io/v1alpha1
+    kind: CDNDistribution
+  mode: Pipeline
+  pipeline:
+    - step: patch-and-transform
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+          - name: backend-bucket
+            base:
+              apiVersion: compute.gcp.upbound.io/v1beta2
+              kind: BackendBucket
+              spec:
+                forProvider:
+                  enableCdn: true
+                  cdnPolicy:
+                    - cacheMode: CACHE_ALL_STATIC
+                      defaultTtl: 86400
+                      maxTtl: 604800
+                      serveWhileStale: 86400
+                providerConfigRef:
+                  name: gcp-provider
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.cacheTtlSeconds
+                toFieldPath: spec.forProvider.cdnPolicy[0].defaultTtl
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.team
+                toFieldPath: metadata.labels["team"]
+
+          - name: url-map
+            base:
+              apiVersion: compute.gcp.upbound.io/v1beta2
+              kind: URLMap
+              spec:
+                forProvider:
+                  defaultServiceSelector:
+                    matchControllerRef: true
+                providerConfigRef:
+                  name: gcp-provider
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.team
+                toFieldPath: metadata.labels["team"]
+              - type: ToCompositeFieldPath
+                fromFieldPath: status.atProvider.selfLink
+                toFieldPath: status.endpoint

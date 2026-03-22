@@ -1,0 +1,58 @@
+# ABOUTME: GCP Composition for ObjectStorage — maps platform API to GCS bucket.
+# ABOUTME: Uses Pipeline mode with function-patch-and-transform and region mapping.
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: object-storage-gcp
+  labels:
+    provider: gcp
+    crossplane.io/xrd: xobjectstorages.platform.kubecon.io
+spec:
+  compositeTypeRef:
+    apiVersion: platform.kubecon.io/v1alpha1
+    kind: ObjectStorage
+  mode: Pipeline
+  pipeline:
+    - step: patch-and-transform
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+          - name: gcs-bucket
+            base:
+              apiVersion: storage.gcp.upbound.io/v1beta2
+              kind: Bucket
+              spec:
+                forProvider:
+                  storageClass: STANDARD
+                  uniformBucketLevelAccess: true
+                  publicAccessPrevention: enforced
+                  forceDestroy: false
+                  versioning:
+                    - enabled: false
+                  encryption:
+                    - defaultKmsKeyName: ""
+                providerConfigRef:
+                  name: gcp-provider
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.region
+                toFieldPath: spec.forProvider.location
+                transforms:
+                  - type: map
+                    map:
+                      eu-west-1: EUROPE-WEST1
+                      eu-central-1: EUROPE-WEST3
+                      us-east-1: US-EAST1
+                      us-west-2: US-WEST1
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.versioning
+                toFieldPath: spec.forProvider.versioning[0].enabled
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.team
+                toFieldPath: spec.forProvider.labels["team"]
+              - type: ToCompositeFieldPath
+                fromFieldPath: status.atProvider.url
+                toFieldPath: status.endpoint
