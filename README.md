@@ -13,8 +13,8 @@ _To be defined as the project develops._
 ## Getting Started
 
 ```bash
-git clone git@github.com:peopleforrester/portal-fatigue-kubecon-2026.git
-cd portal-fatigue-kubecon-2026
+git clone git@github.com:peopleforrester/backend-first-idp.git
+cd backend-first-idp
 ```
 
 ## License
