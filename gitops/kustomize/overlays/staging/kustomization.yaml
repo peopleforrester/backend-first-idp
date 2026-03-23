@@ -7,5 +7,6 @@ resources:
   - ../../base
   - ../../../../policies/kyverno/promotion/staging
 
-commonLabels:
-  environment: staging
+labels:
+  - pairs:
+      environment: staging

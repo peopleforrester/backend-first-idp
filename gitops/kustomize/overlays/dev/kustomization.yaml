@@ -7,5 +7,6 @@ resources:
   - ../../base
   - ../../../../policies/kyverno/promotion/dev
 
-commonLabels:
-  environment: dev
+labels:
+  - pairs:
+      environment: dev

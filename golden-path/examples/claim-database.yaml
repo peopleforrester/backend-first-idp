@@ -5,6 +5,8 @@ kind: DatabaseInstanceClaim
 metadata:
   name: checkout-db
   namespace: checkout
+  labels:
+    team: checkout
 spec:
   size: small
   region: eu-west-1
