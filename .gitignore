@@ -81,3 +81,6 @@ secrets/*
 
 # CLI binary
 cli/platform
+
+# Presentation files (large binaries — use Git LFS or host externally)
+*.pptx

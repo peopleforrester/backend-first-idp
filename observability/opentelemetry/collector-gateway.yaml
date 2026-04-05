@@ -39,6 +39,8 @@ spec:
           enabled: true
       otlp:
         endpoint: tempo.observability.svc.cluster.local:4317
+        # DEMO: In production, configure mTLS between gateway and backend.
+        # Insecure transport used here for demo simplicity.
         tls:
           insecure: true
       debug:
