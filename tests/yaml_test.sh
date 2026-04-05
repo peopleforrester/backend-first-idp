@@ -2,9 +2,8 @@
 # ABOUTME: YAML validation test — runs yamllint on all YAML files in the repo.
 # ABOUTME: Run via 'make test-yaml' or directly with bash.
 
-set -euo pipefail
-
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source-path=SCRIPTDIR
+source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 echo "=== YAML Lint Tests ==="
 echo ""

@@ -2,30 +2,8 @@
 # ABOUTME: Scale test — validates 100+ team claims exist and are well-formed.
 # ABOUTME: Run via 'make test-scale' or directly with bash.
 
-set -euo pipefail
-
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PASS=0
-FAIL=0
-
-if [[ -t 1 ]]; then
-    GREEN='\033[0;32m' RED='\033[0;31m' NC='\033[0m'
-else
-    GREEN='' RED='' NC=''
-fi
-
-assert() {
-    local description="$1"
-    local result
-    result="$(echo "$2" | tr '[:upper:]' '[:lower:]')"
-    if [[ "${result}" == "true" ]]; then
-        echo -e "  ${GREEN}PASS${NC} ${description}"
-        ((PASS++)) || true
-    else
-        echo -e "  ${RED}FAIL${NC} ${description}"
-        ((FAIL++)) || true
-    fi
-}
+# shellcheck source-path=SCRIPTDIR
+source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 echo "=== Scale Tests ==="
 echo ""
@@ -36,10 +14,7 @@ if [[ ! -d "${TEAMS_DIR}" ]]; then
     echo "No teams/ directory found — skipping."
     echo ""
     assert "teams/ directory exists" "false"
-    echo ""
-    echo "=== Results ==="
-    echo -e "  ${GREEN}Passed: ${PASS}${NC}  ${RED}Failed: ${FAIL}${NC}"
-    exit 1
+    print_results "SCALE TESTS"
 fi
 
 # Count claim files
@@ -91,15 +66,4 @@ TEAM_COUNT=${#TEAM_DIRS[@]}
 echo "  Found ${TEAM_COUNT} teams"
 assert "At least 10 teams" "$([[ ${TEAM_COUNT} -ge 10 ]] && echo true || echo false)"
 
-echo ""
-echo "=== Results ==="
-echo -e "  ${GREEN}Passed: ${PASS}${NC}  ${RED}Failed: ${FAIL}${NC}"
-echo ""
-
-if [[ ${FAIL} -gt 0 ]]; then
-    echo -e "${RED}SCALE TESTS FAILED${NC}"
-    exit 1
-else
-    echo -e "${GREEN}ALL SCALE TESTS PASSED${NC}"
-    exit 0
-fi
+print_results "SCALE TESTS"

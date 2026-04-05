@@ -2,31 +2,10 @@
 # ABOUTME: XRD validation test — asserts all 7 platform XRDs have correct structure and schema.
 # ABOUTME: Run via 'make test-xrd' or directly with bash.
 
-set -euo pipefail
+# shellcheck source-path=SCRIPTDIR
+source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 XRD_DIR="${REPO_ROOT}/platform-api/xrds"
-PASS=0
-FAIL=0
-
-if [[ -t 1 ]]; then
-    GREEN='\033[0;32m' RED='\033[0;31m' NC='\033[0m'
-else
-    GREEN='' RED='' NC=''
-fi
-
-assert() {
-    local description="$1"
-    local result
-    result="$(echo "$2" | tr '[:upper:]' '[:lower:]')"
-    if [[ "${result}" == "true" ]]; then
-        echo -e "  ${GREEN}PASS${NC} ${description}"
-        ((PASS++)) || true
-    else
-        echo -e "  ${RED}FAIL${NC} ${description}"
-        ((FAIL++)) || true
-    fi
-}
 
 echo "=== XRD Validation Tests (v2 — 7 resource types) ==="
 echo ""
@@ -244,15 +223,4 @@ for k, v in data.items():
     print(f'{k}={str(v).lower()}')
 ")
 
-echo ""
-echo "=== Results ==="
-echo -e "  ${GREEN}Passed: ${PASS}${NC}  ${RED}Failed: ${FAIL}${NC}"
-echo ""
-
-if [[ ${FAIL} -gt 0 ]]; then
-    echo -e "${RED}XRD TESTS FAILED${NC}"
-    exit 1
-else
-    echo -e "${GREEN}ALL XRD TESTS PASSED${NC}"
-    exit 0
-fi
+print_results "XRD TESTS"

@@ -2,30 +2,8 @@
 # ABOUTME: ESO manifest validation — ClusterSecretStores and ExternalSecrets.
 # ABOUTME: Run via 'make test-eso' or directly with bash.
 
-set -euo pipefail
-
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PASS=0
-FAIL=0
-
-if [[ -t 1 ]]; then
-    GREEN='\033[0;32m' RED='\033[0;31m' NC='\033[0m'
-else
-    GREEN='' RED='' NC=''
-fi
-
-assert() {
-    local description="$1"
-    local result
-    result="$(echo "$2" | tr '[:upper:]' '[:lower:]')"
-    if [[ "${result}" == "true" ]]; then
-        echo -e "  ${GREEN}PASS${NC} ${description}"
-        ((PASS++)) || true
-    else
-        echo -e "  ${RED}FAIL${NC} ${description}"
-        ((FAIL++)) || true
-    fi
-}
+# shellcheck source-path=SCRIPTDIR
+source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 echo "=== ESO Tests ==="
 echo ""
@@ -66,15 +44,4 @@ for es in "database-credentials" "provider-credentials" "tls-certificates"; do
     fi
 done
 
-echo ""
-echo "=== Results ==="
-echo -e "  ${GREEN}Passed: ${PASS}${NC}  ${RED}Failed: ${FAIL}${NC}"
-echo ""
-
-if [[ ${FAIL} -gt 0 ]]; then
-    echo -e "${RED}ESO TESTS FAILED${NC}"
-    exit 1
-else
-    echo -e "${GREEN}ALL ESO TESTS PASSED${NC}"
-    exit 0
-fi
+print_results "ESO TESTS"

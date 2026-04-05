@@ -2,42 +2,8 @@
 # ABOUTME: Structure test — asserts all expected v2 files exist in the repo.
 # ABOUTME: Run via 'make test-structure' or directly with bash.
 
-set -euo pipefail
-
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PASS=0
-FAIL=0
-
-# Colors (disable if not a terminal)
-if [[ -t 1 ]]; then
-    GREEN='\033[0;32m' RED='\033[0;31m' NC='\033[0m'
-else
-    GREEN='' RED='' NC=''
-fi
-
-assert_file_exists() {
-    local file="$1"
-    local description="${2:-$file}"
-    if [[ -f "${REPO_ROOT}/${file}" ]]; then
-        echo -e "  ${GREEN}PASS${NC} ${description}"
-        ((PASS++)) || true
-    else
-        echo -e "  ${RED}FAIL${NC} ${description} — file not found: ${file}"
-        ((FAIL++)) || true
-    fi
-}
-
-assert_dir_exists() {
-    local dir="$1"
-    local description="${2:-$dir}"
-    if [[ -d "${REPO_ROOT}/${dir}" ]]; then
-        echo -e "  ${GREEN}PASS${NC} ${description}"
-        ((PASS++)) || true
-    else
-        echo -e "  ${RED}FAIL${NC} ${description} — directory not found: ${dir}"
-        ((FAIL++)) || true
-    fi
-}
+# shellcheck source-path=SCRIPTDIR
+source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 echo "=== Structure Tests (v2) ==="
 echo ""
@@ -194,15 +160,4 @@ for doc in "${DOCS[@]}"; do
     assert_file_exists "docs/${doc}.md" "Doc: ${doc}"
 done
 
-echo ""
-echo "=== Results ==="
-echo -e "  ${GREEN}Passed: ${PASS}${NC}  ${RED}Failed: ${FAIL}${NC}"
-echo ""
-
-if [[ ${FAIL} -gt 0 ]]; then
-    echo -e "${RED}STRUCTURE TESTS FAILED${NC}"
-    exit 1
-else
-    echo -e "${GREEN}ALL STRUCTURE TESTS PASSED${NC}"
-    exit 0
-fi
+print_results "STRUCTURE TESTS"

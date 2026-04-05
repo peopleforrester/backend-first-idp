@@ -2,31 +2,10 @@
 # ABOUTME: Composition validation test — asserts all 21 cloud compositions (7 types × 3 clouds).
 # ABOUTME: Run via 'make test-compositions' or directly with bash.
 
-set -euo pipefail
+# shellcheck source-path=SCRIPTDIR
+source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 COMP_DIR="${REPO_ROOT}/platform-api/compositions"
-PASS=0
-FAIL=0
-
-if [[ -t 1 ]]; then
-    GREEN='\033[0;32m' RED='\033[0;31m' NC='\033[0m'
-else
-    GREEN='' RED='' NC=''
-fi
-
-assert() {
-    local description="$1"
-    local result
-    result="$(echo "$2" | tr '[:upper:]' '[:lower:]')"
-    if [[ "${result}" == "true" ]]; then
-        echo -e "  ${GREEN}PASS${NC} ${description}"
-        ((PASS++)) || true
-    else
-        echo -e "  ${RED}FAIL${NC} ${description}"
-        ((FAIL++)) || true
-    fi
-}
 
 echo "=== Composition Validation Tests (v2 — 21 compositions) ==="
 echo ""
@@ -124,15 +103,4 @@ for k, v in sorted(data.items()):
     print(f'{k}={str(v).lower()}')
 ")
 
-echo ""
-echo "=== Results ==="
-echo -e "  ${GREEN}Passed: ${PASS}${NC}  ${RED}Failed: ${FAIL}${NC}"
-echo ""
-
-if [[ ${FAIL} -gt 0 ]]; then
-    echo -e "${RED}COMPOSITION TESTS FAILED${NC}"
-    exit 1
-else
-    echo -e "${GREEN}ALL COMPOSITION TESTS PASSED${NC}"
-    exit 0
-fi
+print_results "COMPOSITION TESTS"

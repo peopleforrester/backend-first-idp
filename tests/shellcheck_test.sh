@@ -2,9 +2,8 @@
 # ABOUTME: Shellcheck test — validates all shell scripts in the repo.
 # ABOUTME: Run via 'make test-shell' or directly with bash.
 
-set -euo pipefail
-
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source-path=SCRIPTDIR
+source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 echo "=== Shellcheck Tests ==="
 echo ""
@@ -23,19 +22,19 @@ fi
 echo "Checking ${#SHELL_FILES[@]} shell scripts..."
 echo ""
 
-FAIL=0
+SHELL_FAIL=0
 for f in "${SHELL_FILES[@]}"; do
     REL=$(realpath --relative-to="${REPO_ROOT}" "${f}")
-    if shellcheck "${f}"; then
+    if shellcheck -x "${f}"; then
         echo "  PASS ${REL}"
     else
         echo "  FAIL ${REL}"
-        FAIL=1
+        SHELL_FAIL=1
     fi
 done
 
 echo ""
-if [[ ${FAIL} -ne 0 ]]; then
+if [[ ${SHELL_FAIL} -ne 0 ]]; then
     echo "SHELLCHECK TESTS FAILED"
     exit 1
 else
