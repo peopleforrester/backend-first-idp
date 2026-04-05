@@ -84,3 +84,36 @@ spec:
         pattern:
           spec:
             region: "eu-west-1 | eu-central-1 | us-east-1 | us-west-2"
+
+    - name: default-deny-unlisted-teams
+      match:
+        any:
+          - resources:
+              kinds:
+                - DatabaseInstanceClaim
+                - CacheInstanceClaim
+                - MessageQueueClaim
+                - ObjectStorageClaim
+      preconditions:
+        all:
+          - key: "{{ request.object.spec.team }}"
+            operator: AnyNotIn
+            value:
+              - checkout
+              - payments
+              - analytics
+              - platform
+              - identity
+              - catalog
+              - shipping
+              - notifications
+              - inventory
+              - search
+              - billing
+              - marketing
+      validate:
+        message: >-
+          Unknown team: {{ request.object.spec.team }}.
+          Contact the platform team to onboard your team before
+          submitting resource claims.
+        deny: {}

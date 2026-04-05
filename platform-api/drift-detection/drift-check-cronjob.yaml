@@ -27,7 +27,8 @@ spec:
           restartPolicy: Never
           containers:
             - name: drift-check
-              image: bitnami/kubectl:latest
+              # Migrated from bitnami/kubectl (deprecated Sept 2025) to Chainguard hardened image
+              image: cgr.dev/chainguard/kubectl:latest
               command:
                 - /bin/bash
                 - /scripts/check-drift.sh
