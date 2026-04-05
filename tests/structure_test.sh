@@ -160,4 +160,32 @@ for doc in "${DOCS[@]}"; do
     assert_file_exists "docs/${doc}.md" "Doc: ${doc}"
 done
 
+# --- Backstage Portal ---
+echo ""
+echo "--- Backstage Portal ---"
+assert_dir_exists "portal/backstage/templates" "Backstage templates dir"
+assert_file_exists "portal/backstage/app-config.yaml" "Backstage app-config"
+assert_file_exists "portal/backstage/catalog-info.yaml" "Backstage catalog"
+assert_file_exists "portal/backstage/templates/all-templates.yaml" "All templates index"
+TEMPLATES=("database-claim" "cache-claim" "queue-claim" "storage-claim" "cdn-claim" "full-service")
+for tmpl in "${TEMPLATES[@]}"; do
+    assert_file_exists "portal/backstage/templates/${tmpl}/template.yaml" "Template: ${tmpl}"
+done
+
+# --- CLI ---
+echo ""
+echo "--- CLI ---"
+assert_dir_exists "cli/cmd" "CLI cmd dir"
+assert_dir_exists "cli/pkg/claim" "CLI claim package"
+assert_dir_exists "cli/pkg/git" "CLI git package"
+assert_dir_exists "cli/pkg/xrd" "CLI xrd package"
+assert_file_exists "cli/go.mod" "Go module file"
+
+# --- Project Config ---
+echo ""
+echo "--- Project Config ---"
+assert_file_exists ".editorconfig" "EditorConfig"
+assert_file_exists "requirements.txt" "Python requirements"
+assert_dir_exists "docs/plans" "Archived plans dir"
+
 print_results "STRUCTURE TESTS"
