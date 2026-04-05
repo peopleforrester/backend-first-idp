@@ -101,10 +101,10 @@ is optional.
 
 | Component | Version | Role |
 |-----------|---------|------|
-| Crossplane | v2.1.0 | Resource abstraction and cloud provisioning |
-| ArgoCD | v3.3.4 | GitOps delivery (4 ApplicationSets) |
+| Crossplane | v2.2.0 | Resource abstraction and cloud provisioning |
+| ArgoCD | v3.3.6 | GitOps delivery (4 ApplicationSets) |
 | Kyverno | 1.17.1 | Admission control (6 CEL policies) |
-| ESO | v2.0.1 | Secrets management (3 cloud stores) |
+| ESO | v2.2.0 | Secrets management (3 cloud stores) |
 | OTel Operator | latest | Telemetry collection (agent + gateway) |
 | Prometheus | kube-prometheus-stack | Metrics, alerting, recording rules |
 | OpenCost | latest | Cost allocation by team label |

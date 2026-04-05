@@ -187,8 +187,8 @@ See [docs/shadow-metrics.md](docs/shadow-metrics.md) and
 
 | Component | Version | Notes |
 |-----------|---------|-------|
-| Crossplane | v2.1.0 | Namespaced XRs, Pipeline mode only |
-| ArgoCD | v3.3.4 | Server-side apply, fine-grained RBAC |
+| Crossplane | v2.2.0 | Namespaced XRs, Pipeline mode only |
+| ArgoCD | v3.3.6 | Server-side apply, fine-grained RBAC |
 | Kyverno | chart 3.7.1 | CEL policies v1-promoted |
 | External Secrets Operator | chart 2.2.0 | IRSA/WI/OIDC auth |
 | OpenTelemetry Operator | latest | v1beta1 Collector CRs |

@@ -7,14 +7,14 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-# --- Version manifest (pinned March 2026) ---
+# --- Version manifest (pinned April 2026) ---
 PROVIDER=""
 DRY_RUN=false
 SKIP_OBSERVABILITY=false
 
-CROSSPLANE_VERSION="2.1.0"
+CROSSPLANE_VERSION="2.2.0"
 CROSSPLANE_FUNC_VERSION="v0.9.0"
-ARGOCD_VERSION="v3.3.4"
+ARGOCD_VERSION="v3.3.6"
 KYVERNO_CHART_VERSION="3.7.1"
 ESO_CHART_VERSION="2.2.0"
 CERTMANAGER_VERSION="v1.17.1"

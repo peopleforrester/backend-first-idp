@@ -2,7 +2,7 @@
 
 Reference architecture for KubeCon EU 2026 Platform Engineering Zero Day talk: "Architecting a Production-Ready IDP: Argo CD, Crossplane & OPA in Practice." Thesis: portal-first IDPs fail at scale — build automation, guardrails, and GitOps first.
 
-**Stack**: Crossplane v2.1, ArgoCD v3.3.4, Kyverno 1.17.1, External Secrets Operator v2.0.1, OpenTelemetry, Prometheus, OpenCost, Shadow Metrics
+**Stack**: Crossplane v2.2.0, ArgoCD v3.3.6, Kyverno 1.17.1, External Secrets Operator v2.2.0, OpenTelemetry, Prometheus, OpenCost, Shadow Metrics
 
 ## Commands
 
@@ -10,7 +10,7 @@ Reference architecture for KubeCon EU 2026 Platform Engineering Zero Day talk: "
 
 ## Git Workflow
 
-- Active branch: `v2-rebuild` (v1 archived on `staging`/`main`)
+- Active branch: `staging` (v1 archived, v2+v3 complete)
 - Merge to `main` only after `make test` passes
 
 ## Conventions
