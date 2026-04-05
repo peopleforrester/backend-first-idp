@@ -7,10 +7,30 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 )
+
+// CheckBranch returns an error if the current branch is main.
+func CheckBranch(repoRoot string) error {
+	cmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
+	cmd.Dir = repoRoot
+	out, err := cmd.Output()
+	if err != nil {
+		return fmt.Errorf("detecting current branch: %w", err)
+	}
+	branch := strings.TrimSpace(string(out))
+	if branch == "main" {
+		return fmt.Errorf("refusing to push to main. Switch to staging or a feature branch first")
+	}
+	return nil
+}
 
 // Submit writes a claim file to the team's claims directory, commits, and pushes.
 func Submit(repoRoot, team, claimName, yamlContent string) error {
+	if err := CheckBranch(repoRoot); err != nil {
+		return err
+	}
+
 	claimsDir := filepath.Join(repoRoot, "teams", team, "claims")
 	if err := os.MkdirAll(claimsDir, 0o755); err != nil {
 		return fmt.Errorf("creating claims directory: %w", err)

@@ -150,6 +150,9 @@ func buildParams() claim.ClaimParams {
 
 func runCreate(rt claim.ResourceType) error {
 	params := buildParams()
+	if err := claim.ValidateParams(rt, params); err != nil {
+		return err
+	}
 	yaml, err := claim.Generate(rt, params)
 	if err != nil {
 		return err
@@ -181,6 +184,10 @@ func runCreate(rt claim.ResourceType) error {
 func runCreateService() error {
 	params := buildParams()
 	params.Engine = "postgres"
+	// Validate core params (region applies to all service sub-resources)
+	if err := claim.ValidateParams(claim.TypeDatabase, params); err != nil {
+		return err
+	}
 	yaml, err := claim.GenerateFullService(params)
 	if err != nil {
 		return err
