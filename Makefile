@@ -42,9 +42,8 @@ test-structure:
 # Lint is an alias for YAML + shell checks
 lint: test-yaml test-shell
 
-# Full validation (same as test, explicit name)
-validate:
-	@bash tests/validate.sh
+# Full validation (alias for test)
+validate: test
 
 clean:
 	@echo "Nothing to clean."
