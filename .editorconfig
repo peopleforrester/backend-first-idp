@@ -1,0 +1,28 @@
+# ABOUTME: Editor configuration for consistent formatting across editors.
+# ABOUTME: Enforces indent style/size for YAML, Go, Python, Shell, and Makefiles.
+
+root = true
+
+[*]
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+charset = utf-8
+
+[*.{yaml,yml,json}]
+indent_style = space
+indent_size = 2
+
+[*.go]
+indent_style = tab
+
+[*.py]
+indent_style = space
+indent_size = 4
+
+[*.sh]
+indent_style = space
+indent_size = 4
+
+[Makefile]
+indent_style = tab

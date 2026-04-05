@@ -76,9 +76,9 @@ someone submits that claim?"
 ## Beat 3: Three Clouds, One Claim (~2 min)
 
 **Files:** Tab through:
-- `platform-api/compositions/aws/database-small.yaml`
-- `platform-api/compositions/gcp/database-small.yaml`
-- `platform-api/compositions/azure/database-small.yaml`
+- `platform-api/compositions/aws/database.yaml`
+- `platform-api/compositions/gcp/database.yaml`
+- `platform-api/compositions/azure/database.yaml`
 
 "Same claim. Three completely different cloud implementations.
 Twenty-one compositions total — seven resource types across three clouds."

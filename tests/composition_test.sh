@@ -19,9 +19,9 @@ comp_dir = Path(os.environ["COMP_DIR"])
 
 # (filename, expected XRD kind)
 comp_specs = [
-    ("database-small", "DatabaseInstance"),
-    ("cache-small", "CacheInstance"),
-    ("message-queue-small", "MessageQueue"),
+    ("database", "DatabaseInstance"),
+    ("cache", "CacheInstance"),
+    ("message-queue", "MessageQueue"),
     ("object-storage", "ObjectStorage"),
     ("cdn-distribution", "CDNDistribution"),
     ("dns-record", "DNSRecord"),

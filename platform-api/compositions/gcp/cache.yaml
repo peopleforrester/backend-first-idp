@@ -1,11 +1,11 @@
-# ABOUTME: Azure Composition for CacheInstance — maps platform API to Azure Cache for Redis.
+# ABOUTME: GCP Composition for CacheInstance — maps platform API to Memorystore Redis.
 # ABOUTME: Uses Pipeline mode with function-patch-and-transform and region mapping.
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: cache-small-azure
+  name: cache-gcp
   labels:
-    provider: azure
+    provider: gcp
     crossplane.io/xrd: xcacheinstances.platform.kubecon.io
 spec:
   compositeTypeRef:
@@ -20,48 +20,45 @@ spec:
         apiVersion: pt.fn.crossplane.io/v1beta1
         kind: Resources
         resources:
-          - name: redis-cache
+          - name: memorystore-instance
             base:
-              apiVersion: cache.azure.upbound.io/v1beta2
-              kind: RedisCache
+              apiVersion: redis.gcp.upbound.io/v1beta2
+              kind: Instance
               spec:
                 forProvider:
-                  capacity: 1
-                  family: C
-                  skuName: Standard
-                  enableNonSslPort: false
-                  minimumTlsVersion: "1.2"
-                  redisVersion: "6"
-                  resourceGroupNameSelector:
-                    matchControllerRef: true
+                  tier: BASIC
+                  memorySizeGb: 1
+                  redisVersion: REDIS_7_2
+                  transitEncryptionMode: SERVER_AUTHENTICATION
+                  connectMode: PRIVATE_SERVICE_ACCESS
                 providerConfigRef:
-                  name: azure-provider
+                  name: gcp-provider
             patches:
               - type: FromCompositeFieldPath
                 fromFieldPath: spec.region
-                toFieldPath: spec.forProvider.location
+                toFieldPath: spec.forProvider.region
                 transforms:
                   - type: map
                     map:
-                      eu-west-1: westeurope
-                      eu-central-1: germanywestcentral
-                      us-east-1: eastus
-                      us-west-2: westus2
+                      eu-west-1: europe-west1
+                      eu-central-1: europe-west3
+                      us-east-1: us-east1
+                      us-west-2: us-west1
               - type: FromCompositeFieldPath
                 fromFieldPath: spec.size
-                toFieldPath: spec.forProvider.capacity
+                toFieldPath: spec.forProvider.memorySizeGb
                 transforms:
                   - type: map
                     map:
                       small: 1
-                      medium: 2
-                      large: 6
+                      medium: 4
+                      large: 16
               - type: FromCompositeFieldPath
                 fromFieldPath: spec.team
-                toFieldPath: spec.forProvider.tags["team"]
+                toFieldPath: spec.forProvider.labels["team"]
               - type: ToCompositeFieldPath
-                fromFieldPath: status.atProvider.hostname
+                fromFieldPath: status.atProvider.host
                 toFieldPath: status.endpoint
               - type: ToCompositeFieldPath
-                fromFieldPath: status.atProvider.sslPort
+                fromFieldPath: status.atProvider.port
                 toFieldPath: status.port

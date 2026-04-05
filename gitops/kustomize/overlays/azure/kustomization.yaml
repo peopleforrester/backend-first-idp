@@ -5,9 +5,9 @@ kind: Kustomization
 
 resources:
   - ../../base
-  - ../../../../platform-api/compositions/azure/database-small.yaml
-  - ../../../../platform-api/compositions/azure/cache-small.yaml
-  - ../../../../platform-api/compositions/azure/message-queue-small.yaml
+  - ../../../../platform-api/compositions/azure/database.yaml
+  - ../../../../platform-api/compositions/azure/cache.yaml
+  - ../../../../platform-api/compositions/azure/message-queue.yaml
   - ../../../../platform-api/compositions/azure/object-storage.yaml
   - ../../../../platform-api/compositions/azure/cdn-distribution.yaml
   - ../../../../platform-api/compositions/azure/dns-record.yaml

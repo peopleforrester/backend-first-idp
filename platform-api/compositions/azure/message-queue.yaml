@@ -3,7 +3,7 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: message-queue-small-azure
+  name: message-queue-azure
   labels:
     provider: azure
     crossplane.io/xrd: xmessagequeues.platform.kubecon.io

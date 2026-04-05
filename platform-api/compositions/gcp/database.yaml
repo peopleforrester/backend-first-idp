@@ -3,7 +3,7 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: database-small-gcp
+  name: database-gcp
   labels:
     provider: gcp
     crossplane.io/xrd: xdatabaseinstances.platform.kubecon.io

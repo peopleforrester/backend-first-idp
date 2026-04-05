@@ -30,7 +30,7 @@ done
 echo ""
 echo "--- Platform API: Compositions (21) ---"
 CLOUDS=("aws" "gcp" "azure")
-COMP_FILES=("database-small" "cache-small" "message-queue-small" "object-storage" "cdn-distribution" "dns-record" "namespace")
+COMP_FILES=("database" "cache" "message-queue" "object-storage" "cdn-distribution" "dns-record" "namespace")
 for cloud in "${CLOUDS[@]}"; do
     assert_dir_exists "platform-api/compositions/${cloud}" "${cloud} compositions dir"
     for comp in "${COMP_FILES[@]}"; do

@@ -3,7 +3,7 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: cache-small-aws
+  name: cache-aws
   labels:
     provider: aws
     crossplane.io/xrd: xcacheinstances.platform.kubecon.io

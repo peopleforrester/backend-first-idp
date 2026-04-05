@@ -216,7 +216,7 @@ make test-structure    # File tree completeness
 
 1. **Read the golden path:** `golden-path/examples/claim-database.yaml` — 9 lines
 2. **Read the XRD:** `platform-api/xrds/database-instance.yaml` — the API contract
-3. **See three clouds:** Compare `platform-api/compositions/aws/database-small.yaml` vs `gcp/` vs `azure/`
+3. **See three clouds:** Compare `platform-api/compositions/aws/database.yaml` vs `gcp/` vs `azure/`
 4. **Test a policy violation:** `kyverno apply policies/kyverno/cluster-policies/region-enforcement.yaml --resource golden-path/examples/claim-database-WILL-FAIL.yaml`
 5. **See the semantic gap:** Read the annotation on `policies/kyverno/cluster-policies/size-caps.yaml`
 6. **Explore Shadow Metrics:** `platform-api/shadow-metrics/README.md`

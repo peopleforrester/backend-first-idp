@@ -1,0 +1,4 @@
+# ABOUTME: Python dependencies for test suite and scripts.
+# ABOUTME: Install via: pip install -r requirements.txt
+pyyaml>=6.0
+yamllint>=1.35.0

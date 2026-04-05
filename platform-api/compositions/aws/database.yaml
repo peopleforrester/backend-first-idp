@@ -3,7 +3,7 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: database-small-aws
+  name: database-aws
   labels:
     provider: aws
     crossplane.io/xrd: xdatabaseinstances.platform.kubecon.io

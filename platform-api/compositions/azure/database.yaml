@@ -3,7 +3,7 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: database-small-azure
+  name: database-azure
   labels:
     provider: azure
     crossplane.io/xrd: xdatabaseinstances.platform.kubecon.io

@@ -3,7 +3,7 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: message-queue-small-gcp
+  name: message-queue-gcp
   labels:
     provider: gcp
     crossplane.io/xrd: xmessagequeues.platform.kubecon.io

@@ -5,9 +5,9 @@ kind: Kustomization
 
 resources:
   - ../../base
-  - ../../../../platform-api/compositions/gcp/database-small.yaml
-  - ../../../../platform-api/compositions/gcp/cache-small.yaml
-  - ../../../../platform-api/compositions/gcp/message-queue-small.yaml
+  - ../../../../platform-api/compositions/gcp/database.yaml
+  - ../../../../platform-api/compositions/gcp/cache.yaml
+  - ../../../../platform-api/compositions/gcp/message-queue.yaml
   - ../../../../platform-api/compositions/gcp/object-storage.yaml
   - ../../../../platform-api/compositions/gcp/cdn-distribution.yaml
   - ../../../../platform-api/compositions/gcp/dns-record.yaml
