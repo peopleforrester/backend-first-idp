@@ -1,8 +1,9 @@
 # Project State
 
 ## Current Status
-Senior review fix round 2 in progress. Phases 1-6 of 9 complete on staging.
-Plan: docs/plans/senior-review-fixes.md.
+Senior review fix round 2 complete. All 9 phases done on staging.
+Plan: docs/plans/senior-review-fixes.md. Full bash + Go test suites green.
+Ready for merge from staging to main pending Michael's review.
 
 ## Stack Versions (April 2026)
 - Crossplane v2.2.0
@@ -41,9 +42,9 @@ Plan: docs/plans/senior-review-fixes.md.
 - [x] Phase 5: Grafana adminPassword via ESO ExternalSecret
 - [x] Phase 6: ApplicationSet targetRevision: HEAD parameterization
 - [x] Phase 7: README numerical truth + composition disclaimer
-- [ ] Phase 8: Go validator empty-engine default
-- [ ] Phase 9: Python generator XRD enum validation
+- [x] Phase 8: Go validator empty-engine default
+- [x] Phase 9: Python generator XRD enum validation
 
 ## Branch Status
-- `staging`: round-2 fixes landing here
-- `main`: awaiting merge after round 2 finishes and full suite is green
+- `staging`: round-2 hardening landed; full test suite green
+- `main`: awaiting merge from staging

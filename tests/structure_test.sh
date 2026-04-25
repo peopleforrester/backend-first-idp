@@ -186,6 +186,54 @@ assert_yaml_not_contains "README.md" "OpenTelemetry Operator | latest" \
 assert_yaml_not_contains "PROJECT_STATE.md" "3 PrometheusRules" \
     "PROJECT_STATE counts PrometheusRules accurately (not 3)"
 
+# --- Python claim generator: XRD enum validation ---
+echo ""
+echo "--- Python generator XRD enum validation ---"
+assert_python_generator_validates_enums() {
+    # The generator must (a) succeed on the canonical scripts/teams.yaml,
+    # and (b) fail with a clear error when teams.yaml contains a region
+    # not in the database-instance.yaml XRD enum.
+    local good_exit bad_exit
+    local tmp_dir
+    tmp_dir="$(mktemp -d)"
+    trap 'rm -rf "${tmp_dir}"' RETURN
+
+    # (a) Canonical run — should succeed.
+    if (cd "${REPO_ROOT}" && python3 scripts/generate-team-claims.py >"${tmp_dir}/good.log" 2>&1); then
+        good_exit=0
+    else
+        good_exit=$?
+    fi
+    if [[ ${good_exit} -eq 0 ]]; then
+        echo -e "  ${GREEN}PASS${NC} generator succeeds on canonical teams.yaml"
+        ((PASS++)) || true
+    else
+        echo -e "  ${RED}FAIL${NC} generator failed on canonical teams.yaml (exit ${good_exit})"
+        ((FAIL++)) || true
+        return
+    fi
+
+    # (b) Tampered run — invalid region in teams.yaml.
+    cp "${REPO_ROOT}/scripts/teams.yaml" "${tmp_dir}/teams.yaml.bak"
+    sed 's/region: eu-west-1/region: narnia-1/' "${tmp_dir}/teams.yaml.bak" >"${REPO_ROOT}/scripts/teams.yaml"
+    if (cd "${REPO_ROOT}" && python3 scripts/generate-team-claims.py >"${tmp_dir}/bad.log" 2>&1); then
+        bad_exit=0
+    else
+        bad_exit=$?
+    fi
+    # Always restore before asserting so a failure here doesn't leave the repo dirty.
+    cp "${tmp_dir}/teams.yaml.bak" "${REPO_ROOT}/scripts/teams.yaml"
+
+    if [[ ${bad_exit} -ne 0 ]]; then
+        echo -e "  ${GREEN}PASS${NC} generator fails on invalid region in teams.yaml (exit ${bad_exit})"
+        ((PASS++)) || true
+    else
+        echo -e "  ${RED}FAIL${NC} generator accepted invalid region (should have rejected)"
+        ((FAIL++)) || true
+    fi
+}
+assert_python_generator_validates_enums
+
 # --- Secrets / ESO ---
 echo ""
 echo "--- External Secrets Operator ---"

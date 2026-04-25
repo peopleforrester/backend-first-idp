@@ -11,6 +11,67 @@ SCRIPT_DIR = Path(__file__).parent
 REPO_ROOT = SCRIPT_DIR.parent
 TEAMS_FILE = SCRIPT_DIR / "teams.yaml"
 TEAMS_DIR = REPO_ROOT / "teams"
+XRD_DIR = REPO_ROOT / "platform-api" / "xrds"
+
+
+def _load_xrd_enum(xrd_filename: str, field: str) -> list:
+    """Read an enum list off a top-level spec.<field> in an XRD."""
+    path = XRD_DIR / xrd_filename
+    with open(path) as f:
+        doc = next(yaml.safe_load_all(f))
+    versions = doc["spec"]["versions"]
+    schema = versions[0]["schema"]["openAPIV3Schema"]
+    spec_props = schema["properties"]["spec"]["properties"]
+    if field not in spec_props or "enum" not in spec_props[field]:
+        raise RuntimeError(
+            f"XRD {xrd_filename} has no enum on spec.{field}; cannot validate teams.yaml"
+        )
+    return list(spec_props[field]["enum"])
+
+
+def validate_teams_against_xrds(teams: dict) -> None:
+    """Cross-check every region/size in teams.yaml against the XRD enums.
+
+    The Go CLI already enforces this for ad-hoc claims (cli/pkg/claim/
+    validate_input.go); doing the same here means a bad value in
+    teams.yaml fails fast at generation time instead of at admission
+    time on a real cluster.
+    """
+    db_regions = set(_load_xrd_enum("database-instance.yaml", "region"))
+    db_sizes = set(_load_xrd_enum("database-instance.yaml", "size"))
+    cache_sizes = set(_load_xrd_enum("cache-instance.yaml", "size"))
+
+    region_pool = db_regions  # database is the most-restrictive enum
+    size_pool_for_type = {"database": db_sizes, "cache": cache_sizes}
+
+    errors: list[str] = []
+    for team_name, team_config in teams.items():
+        default_region = team_config.get("region", "eu-west-1")
+        if default_region not in region_pool:
+            errors.append(
+                f"team {team_name}: default region {default_region!r} is not in XRD enum {sorted(region_pool)}"
+            )
+        for resource in team_config.get("resources", []):
+            res_region = resource.get("region", default_region)
+            if resource["type"] in ("database", "cache", "message-queue", "object-storage"):
+                if res_region not in region_pool:
+                    errors.append(
+                        f"team {team_name} resource {resource['name']}: region {res_region!r} "
+                        f"is not in XRD enum {sorted(region_pool)}"
+                    )
+            if "size" in resource:
+                pool = size_pool_for_type.get(resource["type"])
+                if pool is not None and resource["size"] not in pool:
+                    errors.append(
+                        f"team {team_name} resource {resource['name']}: size {resource['size']!r} "
+                        f"is not in XRD enum {sorted(pool)} (type={resource['type']})"
+                    )
+
+    if errors:
+        sys.stderr.write("teams.yaml fails XRD enum validation:\n")
+        for err in errors:
+            sys.stderr.write(f"  - {err}\n")
+        sys.exit(1)
 
 # Resource type → (apiVersion, kind, claim_kind)
 RESOURCE_MAP = {
@@ -101,6 +162,11 @@ def main() -> None:
         data = yaml.safe_load(f)
 
     teams = data["teams"]
+
+    # Fail fast if teams.yaml violates the XRD enum contract — better here
+    # than waiting for admission-time rejection on a real cluster.
+    validate_teams_against_xrds(teams)
+
     total_claims = 0
 
     for team_name, team_config in teams.items():
