@@ -55,6 +55,7 @@ echo "--- Drift Detection ---"
 assert_file_exists "platform-api/drift-detection/drift-check-cronjob.yaml" "Drift CronJob"
 assert_file_exists "platform-api/drift-detection/scripts/check-drift.sh" "Drift check script"
 assert_file_exists "platform-api/drift-detection/prometheus-rule-drift.yaml" "Drift alert rule"
+assert_drift_configmap_matches_canonical
 
 # --- Kyverno Policies (6 cluster policies) ---
 echo ""
