@@ -36,14 +36,17 @@ func ValidateParams(rt ResourceType, params ClaimParams) error {
 		}
 	}
 
-	// Engine validation
+	// Engine validation. Empty string is treated as "use the XRD default"
+	// (postgres for database, redis for cache) so callers that don't pre-fill
+	// the field still pass — the XRD itself materializes the default at apply
+	// time. Non-empty unknown values are still rejected.
 	switch rt {
 	case TypeDatabase:
-		if !contains(ValidDBEngines, params.Engine) {
+		if params.Engine != "" && !contains(ValidDBEngines, params.Engine) {
 			return fmt.Errorf("invalid database engine: %q. Valid: %s", params.Engine, strings.Join(ValidDBEngines, ", "))
 		}
 	case TypeCache:
-		if !contains(ValidCacheEngines, params.Engine) {
+		if params.Engine != "" && !contains(ValidCacheEngines, params.Engine) {
 			return fmt.Errorf("invalid cache engine: %q. Valid: %s", params.Engine, strings.Join(ValidCacheEngines, ", "))
 		}
 	}

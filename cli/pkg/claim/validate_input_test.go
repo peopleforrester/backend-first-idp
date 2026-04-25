@@ -115,3 +115,34 @@ func TestValidateParams_AllValidRegions(t *testing.T) {
 		}
 	}
 }
+
+// Empty Engine on a database claim must validate — the XRD specifies
+// default: postgres, so callers that omit the field are well-formed.
+// Without this, any caller that doesn't pre-fill the default sees a
+// spurious 'invalid database engine: ""' rejection.
+func TestValidateParams_EmptyDBEngineIsValid(t *testing.T) {
+	params := ClaimParams{Team: "checkout", Size: "small", Region: "eu-west-1", Engine: ""}
+	if err := ValidateParams(TypeDatabase, params); err != nil {
+		t.Fatalf("empty engine on TypeDatabase should be valid (defaults to postgres), got: %v", err)
+	}
+}
+
+// Same contract for cache: the XRD defaults engine to redis.
+func TestValidateParams_EmptyCacheEngineIsValid(t *testing.T) {
+	params := ClaimParams{Team: "checkout", Size: "small", Region: "eu-west-1", Engine: ""}
+	if err := ValidateParams(TypeCache, params); err != nil {
+		t.Fatalf("empty engine on TypeCache should be valid (defaults to redis), got: %v", err)
+	}
+}
+
+// Non-empty unknown engines must still be rejected.
+func TestValidateParams_UnknownDBEngineStillRejected(t *testing.T) {
+	params := ClaimParams{Team: "checkout", Size: "small", Region: "eu-west-1", Engine: "cassandra"}
+	err := ValidateParams(TypeDatabase, params)
+	if err == nil {
+		t.Fatal("expected error for unknown engine even after empty-string default short-circuit")
+	}
+	if !strings.Contains(err.Error(), "invalid database engine") {
+		t.Errorf("expected 'invalid database engine' error, got: %v", err)
+	}
+}
