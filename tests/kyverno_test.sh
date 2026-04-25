@@ -57,12 +57,15 @@ for test_dir in "${POLICY_DIR}/policy-tests"/*/; do
         fi
     fi
 
-    # Test failing resource (should exit non-0 or have fail > 0)
-    if [[ -f "${test_dir}/resource-fail.yaml" ]]; then
-        output=$(kyverno apply "${policy_file}" --resource "${test_dir}/resource-fail.yaml" 2>&1 || true)
+    # Test failing resources — iterate every resource-fail*.yaml so adding a
+    # new negative case is just adding a file; no test-runner edits needed.
+    while IFS= read -r -d '' fail_resource; do
+        fail_label="$(basename "${fail_resource}" .yaml)"
+        output=$(kyverno apply "${policy_file}" --resource "${fail_resource}" 2>&1 || true)
         fail_count=$(echo "${output}" | grep -oP 'fail: \K[0-9]+' || echo "0")
-        assert "${policy_name}: fail resource rejected (fail=${fail_count})" "$([[ ${fail_count} -gt 0 ]] && echo true || echo false)"
-    fi
+        assert "${policy_name}: ${fail_label} rejected (fail=${fail_count})" \
+            "$([[ ${fail_count} -gt 0 ]] && echo true || echo false)"
+    done < <(find "${test_dir}" -maxdepth 1 -name 'resource-fail*.yaml' -type f -print0 | sort -z)
 
     echo ""
 done

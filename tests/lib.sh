@@ -98,6 +98,54 @@ assert_yaml_not_contains() {
     fi
 }
 
+assert_team_allowlist_matches_teams_yaml() {
+    # The default-deny-unlisted-teams Kyverno rule enumerates the team allowlist
+    # in cluster-policies/region-enforcement.yaml. The source of truth for which
+    # teams exist is scripts/teams.yaml. Assert the two sets are equal.
+    local description="default-deny-unlisted-teams allowlist matches scripts/teams.yaml"
+    local result
+    result="$(REPO_ROOT="${REPO_ROOT}" python3 - <<'PY'
+import sys, yaml, os
+from pathlib import Path
+
+repo = Path(os.environ["REPO_ROOT"])
+teams_yaml = yaml.safe_load((repo / "scripts/teams.yaml").read_text())
+teams_set = set(teams_yaml.get("teams", {}).keys())
+
+policy_docs = list(yaml.safe_load_all(
+    (repo / "policies/kyverno/cluster-policies/region-enforcement.yaml").read_text()
+))
+policy = policy_docs[0]
+allowlist = None
+for rule in policy["spec"]["rules"]:
+    if rule["name"] == "default-deny-unlisted-teams":
+        for cond in rule["preconditions"]["all"]:
+            if cond.get("operator") == "AnyNotIn":
+                allowlist = set(cond["value"])
+                break
+        break
+
+if allowlist is None:
+    print("MISSING_RULE")
+    sys.exit(0)
+
+missing_in_policy = teams_set - allowlist
+extra_in_policy = allowlist - teams_set
+if not missing_in_policy and not extra_in_policy:
+    print("OK")
+else:
+    print(f"DRIFT missing_in_policy={sorted(missing_in_policy)} extra_in_policy={sorted(extra_in_policy)}")
+PY
+)"
+    if [[ "${result}" == "OK" ]]; then
+        echo -e "  ${GREEN}PASS${NC} ${description}"
+        ((PASS++)) || true
+    else
+        echo -e "  ${RED}FAIL${NC} ${description} — ${result}"
+        ((FAIL++)) || true
+    fi
+}
+
 assert_drift_configmap_matches_canonical() {
     # The drift-check CronJob ConfigMap embeds an inline copy of
     # platform-api/drift-detection/scripts/check-drift.sh. They MUST match.

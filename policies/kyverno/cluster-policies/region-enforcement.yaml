@@ -86,6 +86,10 @@ spec:
             region: "eu-west-1 | eu-central-1 | us-east-1 | us-west-2"
 
     - name: default-deny-unlisted-teams
+      # Applies to ALL platform claim kinds (not just region-bearing ones) so a
+      # rogue team cannot bypass allowlisting via CDN, DNS, or Namespace claims.
+      # The team list below MUST stay in sync with scripts/teams.yaml — enforced
+      # by tests/structure_test.sh:assert_team_allowlist_matches_teams_yaml.
       match:
         any:
           - resources:
@@ -94,6 +98,9 @@ spec:
                 - CacheInstanceClaim
                 - MessageQueueClaim
                 - ObjectStorageClaim
+                - CDNDistributionClaim
+                - DNSRecordClaim
+                - KubernetesNamespaceClaim
       preconditions:
         all:
           - key: "{{ request.object.spec.team }}"

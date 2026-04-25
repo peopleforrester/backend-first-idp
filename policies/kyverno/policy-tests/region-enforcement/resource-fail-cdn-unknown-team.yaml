@@ -1,0 +1,12 @@
+# ABOUTME: Test resource — unknown team submitting a CDN claim must be denied.
+# ABOUTME: Verifies default-deny-unlisted-teams covers CDNDistributionClaim.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: CDNDistributionClaim
+metadata:
+  name: rogue-cdn
+  namespace: rogue-team
+  labels:
+    team: rogue-team
+spec:
+  team: rogue-team
+  originDomain: rogue.example.com

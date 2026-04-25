@@ -126,6 +126,7 @@ for team in "${TEAMS[@]}"; do
 done
 assert_file_exists "scripts/generate-team-claims.py" "Claim generator script"
 assert_file_exists "scripts/teams.yaml" "Team manifest"
+assert_team_allowlist_matches_teams_yaml
 
 # --- Secrets / ESO ---
 echo ""

@@ -1,0 +1,11 @@
+# ABOUTME: Test resource — unknown team submitting a Namespace claim must be denied.
+# ABOUTME: Verifies default-deny-unlisted-teams covers KubernetesNamespaceClaim.
+apiVersion: platform.kubecon.io/v1alpha1
+kind: KubernetesNamespaceClaim
+metadata:
+  name: rogue-ns
+  namespace: rogue-team
+  labels:
+    team: rogue-team
+spec:
+  team: rogue-team
