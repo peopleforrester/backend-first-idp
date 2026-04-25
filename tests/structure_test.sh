@@ -168,6 +168,24 @@ assert_yaml_not_contains "gitops/argocd/appset-platform.yaml" "revision: main" \
 assert_yaml_contains "gitops/argocd/appset-platform.yaml" "targetRevision: HEAD" \
     "appset-platform.yaml uses targetRevision: HEAD"
 
+# --- Composition illustrative disclaimer ---
+echo ""
+echo "--- Composition disclaimer ---"
+for cloud in "${CLOUDS[@]}"; do
+    for comp in "${COMP_FILES[@]}"; do
+        assert_yaml_contains "platform-api/compositions/${cloud}/${comp}.yaml" "Illustrative composition" \
+            "${cloud}/${comp}: illustrative-composition disclaimer"
+    done
+done
+
+# --- README/PROJECT_STATE numerical accuracy ---
+echo ""
+echo "--- README numerical accuracy ---"
+assert_yaml_not_contains "README.md" "OpenTelemetry Operator | latest" \
+    "README pins OTel Operator (no 'latest')"
+assert_yaml_not_contains "PROJECT_STATE.md" "3 PrometheusRules" \
+    "PROJECT_STATE counts PrometheusRules accurately (not 3)"
+
 # --- Secrets / ESO ---
 echo ""
 echo "--- External Secrets Operator ---"

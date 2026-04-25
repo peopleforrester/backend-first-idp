@@ -30,6 +30,14 @@ CEL policies (region restrictions, size caps, naming, HA, backups). Crossplane
 provisions the right cloud resources. Shadow Metrics evaluate whether the valid
 configuration is actually correct for the workload. No portal needed.
 
+> **Scope.** This is a reference architecture for the talk, not a productionised
+> platform. The 21 compositions are illustrative — they wire the resource graph
+> end-to-end (XRD → MR → cloud) but do not extract connection secrets or
+> implement every cross-cloud nuance. Treat them as code to read and adapt, not
+> as artifacts to deploy unchanged. The CI suite verifies structural and
+> semantic correctness; landing this in your environment requires the usual
+> hardening pass.
+
 ## What's in This Repo
 
 - **7 XRDs** — Database, Cache, Message Queue, Object Storage, CDN, DNS, Namespace
@@ -191,7 +199,7 @@ See [docs/shadow-metrics.md](docs/shadow-metrics.md) and
 | ArgoCD | v3.3.6 | Server-side apply, fine-grained RBAC |
 | Kyverno | chart 3.7.1 | CEL policies v1-promoted |
 | External Secrets Operator | chart 2.2.0 | IRSA/WI/OIDC auth |
-| OpenTelemetry Operator | latest | v1beta1 Collector CRs |
+| OpenTelemetry Operator | v0.149.0 | v1beta1 Collector CRs |
 | kube-prometheus-stack | chart 72.3.0 | Prometheus + Grafana |
 | OpenCost | chart 1.46.0 | Team-label cost allocation |
 | Upbound Providers | v1.17.0 | AWS, GCP, Azure |

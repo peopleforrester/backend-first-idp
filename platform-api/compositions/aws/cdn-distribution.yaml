@@ -1,5 +1,9 @@
 # ABOUTME: AWS Composition for CDNDistribution — maps platform API to CloudFront.
 # ABOUTME: Uses Pipeline mode with function-patch-and-transform.
+# NOTE: Illustrative composition for the reference architecture.
+# Connection-secret extraction (writeConnectionSecretToRef plumbing through
+# managed resources) is intentionally not wired — this composition is for
+# study, not for direct deployment to a real cluster.
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:

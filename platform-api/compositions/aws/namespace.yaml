@@ -1,5 +1,9 @@
 # ABOUTME: Composition for KubernetesNamespace — creates Namespace + RBAC + ResourceQuota.
 # ABOUTME: Cloud-agnostic; uses Kubernetes provider, not a cloud provider.
+# NOTE: Illustrative composition for the reference architecture.
+# Connection-secret extraction (writeConnectionSecretToRef plumbing through
+# managed resources) is intentionally not wired — this composition is for
+# study, not for direct deployment to a real cluster.
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
