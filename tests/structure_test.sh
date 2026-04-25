@@ -148,6 +148,16 @@ assert_yaml_not_contains "bootstrap/install.sh" "helm repo update prometheus-com
 assert_yaml_not_contains "bootstrap/install.sh" "helm repo update opencost" \
     "install.sh uses bare 'helm repo update' (opencost)"
 
+# --- Grafana admin credentials via ESO ---
+echo ""
+echo "--- Grafana admin via ESO ---"
+assert_file_exists "secrets/eso/external-secrets/grafana-admin.yaml" \
+    "ESO ExternalSecret for Grafana admin credentials"
+assert_yaml_not_contains "observability/prometheus/values-platform.yaml" "CHANGEME" \
+    "Grafana values file does not hardcode CHANGEME password"
+assert_yaml_contains "observability/prometheus/values-platform.yaml" "existingSecret: grafana-admin" \
+    "Grafana values file references existingSecret: grafana-admin"
+
 # --- Secrets / ESO ---
 echo ""
 echo "--- External Secrets Operator ---"

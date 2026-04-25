@@ -21,7 +21,13 @@ prometheus:
 
 grafana:
   enabled: true
-  adminPassword: CHANGEME
+  # Admin credentials are pulled from the cluster's secret manager via ESO.
+  # See secrets/eso/external-secrets/grafana-admin.yaml. The chart reads
+  # admin-user and admin-password keys from this Secret.
+  admin:
+    existingSecret: grafana-admin
+    userKey: admin-user
+    passwordKey: admin-password
   sidecar:
     dashboards:
       enabled: true
