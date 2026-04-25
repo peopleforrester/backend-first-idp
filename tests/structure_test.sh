@@ -158,6 +158,16 @@ assert_yaml_not_contains "observability/prometheus/values-platform.yaml" "CHANGE
 assert_yaml_contains "observability/prometheus/values-platform.yaml" "existingSecret: grafana-admin" \
     "Grafana values file references existingSecret: grafana-admin"
 
+# --- ApplicationSet targetRevision parameterization ---
+echo ""
+echo "--- ApplicationSet targetRevision ---"
+assert_yaml_not_contains "gitops/argocd/appset-platform.yaml" "targetRevision: main" \
+    "appset-platform.yaml does not hardcode targetRevision: main"
+assert_yaml_not_contains "gitops/argocd/appset-platform.yaml" "revision: main" \
+    "appset-platform.yaml does not hardcode revision: main (Git generator)"
+assert_yaml_contains "gitops/argocd/appset-platform.yaml" "targetRevision: HEAD" \
+    "appset-platform.yaml uses targetRevision: HEAD"
+
 # --- Secrets / ESO ---
 echo ""
 echo "--- External Secrets Operator ---"

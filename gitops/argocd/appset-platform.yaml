@@ -1,6 +1,11 @@
 # ABOUTME: ArgoCD v3 ApplicationSets — platform components, policies, teams, observability.
 # ABOUTME: 4 ApplicationSets covering the full platform delivery pipeline.
 
+# All sources use targetRevision: HEAD so each fork tracks its own default
+# branch. Override per environment by patching this file in a kustomize
+# overlay (gitops/kustomize/overlays/<env>/) — for example, pin to a tag
+# in production while leaving staging on HEAD.
+
 # --- 1. Platform Components ApplicationSet ---
 # Deploys XRDs and cloud-specific compositions per cluster based on provider label.
 apiVersion: argoproj.io/v1alpha1
@@ -31,7 +36,7 @@ spec:
       project: platform
       source:
         repoURL: https://github.com/peopleforrester/backend-first-idp.git
-        targetRevision: main
+        targetRevision: HEAD
         path: "gitops/kustomize/overlays/{{.metadata.labels.provider}}"
       destination:
         server: "{{.server}}"
@@ -82,7 +87,7 @@ spec:
       project: platform
       source:
         repoURL: https://github.com/peopleforrester/backend-first-idp.git
-        targetRevision: main
+        targetRevision: HEAD
         path: "policies/kyverno/promotion/{{.metadata.labels.environment}}"
       destination:
         server: "{{.server}}"
@@ -108,7 +113,7 @@ spec:
   generators:
     - git:
         repoURL: https://github.com/peopleforrester/backend-first-idp.git
-        revision: main
+        revision: HEAD
         directories:
           - path: "teams/*/claims"
   template:
@@ -122,7 +127,7 @@ spec:
       project: teams
       source:
         repoURL: https://github.com/peopleforrester/backend-first-idp.git
-        targetRevision: main
+        targetRevision: HEAD
         path: "{{.path.path}}"
       destination:
         server: https://kubernetes.default.svc
@@ -159,13 +164,13 @@ spec:
       project: platform
       sources:
         - repoURL: https://github.com/peopleforrester/backend-first-idp.git
-          targetRevision: main
+          targetRevision: HEAD
           path: observability/opentelemetry
         - repoURL: https://github.com/peopleforrester/backend-first-idp.git
-          targetRevision: main
+          targetRevision: HEAD
           path: observability/prometheus/platform-rules
         - repoURL: https://github.com/peopleforrester/backend-first-idp.git
-          targetRevision: main
+          targetRevision: HEAD
           path: observability/prometheus/service-monitors
       destination:
         server: "{{.server}}"
