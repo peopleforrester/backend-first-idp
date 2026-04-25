@@ -24,7 +24,16 @@ spec:
             platform.kubecon.io/managed: "true"
         spec:
           serviceAccountName: drift-checker
+          # SA token mount is required: the script calls kubectl against the apiserver.
+          automountServiceAccountToken: true
           restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65532
+            runAsGroup: 65532
+            fsGroup: 65532
+            seccompProfile:
+              type: RuntimeDefault
           containers:
             - name: drift-check
               # Migrated from bitnami/kubectl (deprecated Sept 2025) to Chainguard hardened image
@@ -32,6 +41,20 @@ spec:
               command:
                 - /bin/bash
                 - /scripts/check-drift.sh
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                runAsNonRoot: true
+                capabilities:
+                  drop:
+                    - ALL
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  cpu: 200m
+                  memory: 128Mi
               env:
                 - name: NAMESPACE
                   value: crossplane-system
@@ -45,11 +68,20 @@ spec:
                 - name: scripts
                   mountPath: /scripts
                   readOnly: true
+                # readOnlyRootFilesystem requires writable scratch space for kubectl/curl
+                - name: tmp
+                  mountPath: /tmp
+                - name: home
+                  mountPath: /home/nonroot
           volumes:
             - name: scripts
               configMap:
                 name: drift-check-script
                 defaultMode: 0755
+            - name: tmp
+              emptyDir: {}
+            - name: home
+              emptyDir: {}
 ---
 # ConfigMap holding the drift check script
 apiVersion: v1

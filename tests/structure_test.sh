@@ -57,6 +57,18 @@ assert_file_exists "platform-api/drift-detection/scripts/check-drift.sh" "Drift 
 assert_file_exists "platform-api/drift-detection/prometheus-rule-drift.yaml" "Drift alert rule"
 assert_drift_configmap_matches_canonical
 
+# Pod hardening on the drift-check CronJob — the only real workload in the repo
+DRIFT_YAML="platform-api/drift-detection/drift-check-cronjob.yaml"
+assert_yaml_contains "${DRIFT_YAML}" "runAsNonRoot: true" "drift CronJob: runAsNonRoot"
+assert_yaml_contains "${DRIFT_YAML}" "readOnlyRootFilesystem: true" "drift CronJob: readOnlyRootFilesystem"
+assert_yaml_contains "${DRIFT_YAML}" "allowPrivilegeEscalation: false" "drift CronJob: allowPrivilegeEscalation false"
+assert_yaml_contains "${DRIFT_YAML}" "drop:" "drift CronJob: capabilities drop block"
+assert_yaml_contains "${DRIFT_YAML}" "- ALL" "drift CronJob: drops ALL capabilities"
+assert_yaml_contains "${DRIFT_YAML}" "seccompProfile:" "drift CronJob: seccompProfile set"
+assert_yaml_contains "${DRIFT_YAML}" "type: RuntimeDefault" "drift CronJob: seccompProfile RuntimeDefault"
+assert_yaml_contains "${DRIFT_YAML}" "requests:" "drift CronJob: resource requests"
+assert_yaml_contains "${DRIFT_YAML}" "limits:" "drift CronJob: resource limits"
+
 # --- Kyverno Policies (6 cluster policies) ---
 echo ""
 echo "--- Kyverno Policies ---"

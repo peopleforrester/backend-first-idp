@@ -70,6 +70,34 @@ assert_equal_files() {
     fi
 }
 
+assert_yaml_contains() {
+    # Assert that a YAML file contains an arbitrary literal string.
+    # Whitespace-tolerant grep with -F (fixed string).
+    local file="$1"
+    local needle="$2"
+    local description="${3:-${file} contains [${needle}]}"
+    if grep -F -q -- "${needle}" "${REPO_ROOT}/${file}"; then
+        echo -e "  ${GREEN}PASS${NC} ${description}"
+        ((PASS++)) || true
+    else
+        echo -e "  ${RED}FAIL${NC} ${description} — not found in ${file}"
+        ((FAIL++)) || true
+    fi
+}
+
+assert_yaml_not_contains() {
+    local file="$1"
+    local needle="$2"
+    local description="${3:-${file} does not contain [${needle}]}"
+    if grep -F -q -- "${needle}" "${REPO_ROOT}/${file}"; then
+        echo -e "  ${RED}FAIL${NC} ${description} — unexpectedly found in ${file}"
+        ((FAIL++)) || true
+    else
+        echo -e "  ${GREEN}PASS${NC} ${description}"
+        ((PASS++)) || true
+    fi
+}
+
 assert_drift_configmap_matches_canonical() {
     # The drift-check CronJob ConfigMap embeds an inline copy of
     # platform-api/drift-detection/scripts/check-drift.sh. They MUST match.
