@@ -128,6 +128,26 @@ assert_file_exists "scripts/generate-team-claims.py" "Claim generator script"
 assert_file_exists "scripts/teams.yaml" "Team manifest"
 assert_team_allowlist_matches_teams_yaml
 
+# --- Bootstrap robustness ---
+echo ""
+echo "--- Bootstrap robustness ---"
+assert_yaml_contains "bootstrap/install.sh" "kubectl wait --for=condition=Established crd/" \
+    "install.sh waits for CRDs to be Established"
+assert_yaml_not_contains "bootstrap/install.sh" "latest/download/opentelemetry-operator.yaml" \
+    "install.sh does not pull OTel Operator from latest/download"
+# helm 3.13+ accepts 'helm repo update <name>' but 3.x baseline does not.
+# Use the bare form for portability.
+assert_yaml_not_contains "bootstrap/install.sh" "helm repo update crossplane-stable" \
+    "install.sh uses bare 'helm repo update' (crossplane-stable)"
+assert_yaml_not_contains "bootstrap/install.sh" "helm repo update kyverno" \
+    "install.sh uses bare 'helm repo update' (kyverno)"
+assert_yaml_not_contains "bootstrap/install.sh" "helm repo update external-secrets" \
+    "install.sh uses bare 'helm repo update' (external-secrets)"
+assert_yaml_not_contains "bootstrap/install.sh" "helm repo update prometheus-community" \
+    "install.sh uses bare 'helm repo update' (prometheus-community)"
+assert_yaml_not_contains "bootstrap/install.sh" "helm repo update opencost" \
+    "install.sh uses bare 'helm repo update' (opencost)"
+
 # --- Secrets / ESO ---
 echo ""
 echo "--- External Secrets Operator ---"

@@ -20,6 +20,7 @@ ESO_CHART_VERSION="2.2.0"
 CERTMANAGER_VERSION="v1.17.1"
 PROMETHEUS_CHART_VERSION="72.3.0"
 OPENCOST_CHART_VERSION="1.46.0"
+OTEL_OPERATOR_VERSION="v0.149.0"
 
 usage() {
     cat <<USAGE
@@ -85,6 +86,18 @@ run() {
     fi
 }
 
+# Wait for CRDs created by a kubectl apply to reach Established before
+# applying CRs that depend on them. Crossplane v2 typically takes 20-60s
+# on a cold cluster; without this, downstream applies race the API server.
+wait_crd() {
+    local crd="$1"
+    if [[ "${DRY_RUN}" == "true" ]]; then
+        echo "  [DRY RUN] kubectl wait --for=condition=Established crd/${crd} --timeout=120s"
+    else
+        kubectl wait --for=condition=Established "crd/${crd}" --timeout=120s
+    fi
+}
+
 TOTAL_STEPS=12
 if [[ "${SKIP_OBSERVABILITY}" == "true" ]]; then
     TOTAL_STEPS=8
@@ -127,7 +140,7 @@ echo "  cert-manager installed."
 # --- Step 2: Crossplane ---
 step "Installing Crossplane ${CROSSPLANE_VERSION}"
 run helm repo add crossplane-stable https://charts.crossplane.io/stable 2>/dev/null || true
-run helm repo update crossplane-stable
+run helm repo update
 run helm upgrade --install crossplane crossplane-stable/crossplane \
     --namespace crossplane-system \
     --create-namespace \
@@ -167,7 +180,7 @@ echo "  ArgoCD v3 installed (server-side apply)."
 # --- Step 6: Kyverno ---
 step "Installing Kyverno (chart ${KYVERNO_CHART_VERSION})"
 run helm repo add kyverno https://kyverno.github.io/kyverno/ 2>/dev/null || true
-run helm repo update kyverno
+run helm repo update
 run helm upgrade --install kyverno kyverno/kyverno \
     --namespace kyverno \
     --create-namespace \
@@ -181,7 +194,7 @@ echo "  Kyverno installed."
 # --- Step 7: External Secrets Operator ---
 step "Installing External Secrets Operator (chart ${ESO_CHART_VERSION})"
 run helm repo add external-secrets https://charts.external-secrets.io 2>/dev/null || true
-run helm repo update external-secrets
+run helm repo update
 run helm upgrade --install external-secrets external-secrets/external-secrets \
     --namespace external-secrets \
     --create-namespace \
@@ -195,6 +208,19 @@ step "Applying platform resources"
 echo "  Applying XRDs..."
 run kubectl apply -f "${REPO_ROOT}/platform-api/xrds/"
 
+# XRDs install CRDs lazily via Crossplane — wait for the claim CRDs the
+# compositions reference before applying the next layer.
+echo "  Waiting for XRD-derived CRDs to be Established..."
+for crd in databaseinstanceclaims.platform.kubecon.io \
+           cacheinstanceclaims.platform.kubecon.io \
+           messagequeueclaims.platform.kubecon.io \
+           objectstorageclaims.platform.kubecon.io \
+           cdndistributionclaims.platform.kubecon.io \
+           dnsrecordclaims.platform.kubecon.io \
+           kubernetesnamespaceclaims.platform.kubecon.io; do
+    wait_crd "${crd}"
+done
+
 echo "  Applying ${PROVIDER} compositions..."
 run kubectl apply -f "${REPO_ROOT}/platform-api/compositions/${PROVIDER}/"
 
@@ -203,6 +229,9 @@ run kubectl apply -f "${REPO_ROOT}/policies/kyverno/cluster-policies/"
 
 echo "  Applying Shadow Metric CRD..."
 run kubectl apply -f "${REPO_ROOT}/platform-api/shadow-metrics/shadow-metric-crd.yaml"
+
+# Wait for the ShadowMetricRule CRD before its CRs go in.
+wait_crd "shadowmetricrules.platform.kubecon.io"
 
 echo "  Applying Shadow Metric rules..."
 run kubectl apply -f "${REPO_ROOT}/platform-api/shadow-metrics/rules/"
@@ -222,14 +251,14 @@ echo "  Platform resources applied."
 if [[ "${SKIP_OBSERVABILITY}" == "false" ]]; then
 
     # --- Step 9: OpenTelemetry Operator ---
-    step "Installing OpenTelemetry Operator"
-    run kubectl apply -f "https://github.com/open-telemetry/opentelemetry-operator/releases/latest/download/opentelemetry-operator.yaml"
-    echo "  OpenTelemetry Operator installed."
+    step "Installing OpenTelemetry Operator ${OTEL_OPERATOR_VERSION}"
+    run kubectl apply -f "https://github.com/open-telemetry/opentelemetry-operator/releases/download/${OTEL_OPERATOR_VERSION}/opentelemetry-operator.yaml"
+    echo "  OpenTelemetry Operator ${OTEL_OPERATOR_VERSION} installed."
 
     # --- Step 10: kube-prometheus-stack ---
     step "Installing kube-prometheus-stack (chart ${PROMETHEUS_CHART_VERSION})"
     run helm repo add prometheus-community https://prometheus-community.github.io/helm-charts 2>/dev/null || true
-    run helm repo update prometheus-community
+    run helm repo update
     run helm upgrade --install prometheus prometheus-community/kube-prometheus-stack \
         --namespace observability \
         --create-namespace \
@@ -241,7 +270,7 @@ if [[ "${SKIP_OBSERVABILITY}" == "false" ]]; then
     # --- Step 11: OpenCost ---
     step "Installing OpenCost (chart ${OPENCOST_CHART_VERSION})"
     run helm repo add opencost https://opencost.github.io/opencost-helm-chart 2>/dev/null || true
-    run helm repo update opencost
+    run helm repo update
     run helm upgrade --install opencost opencost/opencost \
         --namespace observability \
         --version "${OPENCOST_CHART_VERSION}" \
@@ -281,7 +310,7 @@ echo "  ESO:            chart ${ESO_CHART_VERSION}"
 if [[ "${SKIP_OBSERVABILITY}" == "false" ]]; then
 echo "  Prometheus:     chart ${PROMETHEUS_CHART_VERSION}"
 echo "  OpenCost:       chart ${OPENCOST_CHART_VERSION}"
-echo "  OTel Operator:  latest"
+echo "  OTel Operator:  ${OTEL_OPERATOR_VERSION}"
 fi
 echo ""
 echo "  XRDs:           7 resource types"
